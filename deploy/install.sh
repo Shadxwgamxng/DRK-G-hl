@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # DRK Göhl – KFZ-Warte: Installation auf einem Root-Server (Debian/Ubuntu) – OHNE Demo-Daten.
-# Aufruf aus dem entpackten Verzeichnis:  sudo bash deploy/install.sh
+# Aufruf aus dem entpackten Verzeichnis:  bash deploy/install.sh
 set -euo pipefail
 
 cd "$(dirname "$0")"
 DEPLOY_DIR="$(pwd)"
 APP_DIR="$(cd .. && pwd)"
 
-if [ "$(id -u)" -ne 0 ]; then echo "Bitte mit sudo/als root ausführen."; exit 1; fi
+if [ "$(id -u)" -ne 0 ]; then echo "Bitte als root ausführen (z. B. nach „su -“ oder per SSH als root)."; exit 1; fi
 
 echo "== DRK Göhl – KFZ-Warte: Installation =="
 
@@ -98,5 +98,5 @@ if [ "$FIRST_INSTALL" = 1 ]; then
   echo "    und danach SEED_ADMIN_PASSWORD aus $DEPLOY_DIR/.env löschen."
 fi
 echo " Backups:  $DEPLOY_DIR/backups   (täglich 02:30)"
-echo " Update:   sudo bash $DEPLOY_DIR/update.sh"
+echo " Update:   bash $DEPLOY_DIR/update.sh"
 echo "================================================================"

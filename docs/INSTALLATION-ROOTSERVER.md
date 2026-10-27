@@ -6,7 +6,7 @@ Diese Anleitung richtet die KFZ-Warte mit **HTTPS, Datenbank, täglichen Erinner
 | | |
 |---|---|
 | Server | Root-Server/vServer mit **Ubuntu 22.04/24.04 oder Debian 12**, mind. 2 GB RAM (4 GB empfohlen), 20 GB Speicher |
-| Zugang | SSH-Zugang als `root` oder Benutzer mit `sudo` |
+| Zugang | SSH-Zugang als `root` (alle Befehle als root ausführen; `sudo` wird nicht benötigt) |
 | Domain | Eine (Sub-)Domain, z. B. `kfz.drk-goehl.de`, deren **A-Eintrag (und ggf. AAAA) auf die IP des Servers zeigt** |
 | Ports | 80 und 443 müssen aus dem Internet erreichbar sein (Firewall des Hosters prüfen) |
 
@@ -24,12 +24,12 @@ scp drk-kfz-warte.zip root@SERVER-IP:/opt/
 Alternativ mit WinSCP/FileZilla nach `/opt/` hochladen.
 
 ## 3. Entpacken und installieren
-Per SSH auf den Server (`ssh root@SERVER-IP`):
+Per SSH auf den Server (`ssh root@SERVER-IP`, z. B. in Tabby/PuTTY). Die Befehle laufen **auf dem Server**, nicht in der lokalen Windows-Konsole. Als `root` ist kein `sudo` nötig; bist du als anderer Benutzer angemeldet, zuerst `su -` eingeben.
 ```bash
 apt-get update && apt-get install -y unzip
 cd /opt && unzip drk-kfz-warte.zip
 cd /opt/drk-kfz-warte
-sudo bash deploy/install.sh
+bash deploy/install.sh
 ```
 Das Skript fragt nach:
 1. **Domain** (z. B. `kfz.drk-goehl.de`)
@@ -79,8 +79,8 @@ Dann `cd /opt/drk-kfz-warte/deploy && docker compose up -d` und in der App unter
 | Status | `docker compose ps` |
 | Logs ansehen | `docker compose logs -f app` |
 | Neustart | `docker compose restart app` |
-| Backup sofort | `sudo ./backup.sh` |
-| Wiederherstellen | `sudo ./restore.sh backups/db_DATUM.dump backups/uploads_DATUM.tar.gz` |
+| Backup sofort | `./backup.sh` |
+| Wiederherstellen | `./restore.sh backups/db_DATUM.dump backups/uploads_DATUM.tar.gz` |
 | Erinnerungen manuell | `docker compose exec app npx tsx scripts/run-reminders.ts` |
 | Passwort zurücksetzen (Notfall) | `docker compose exec app npx tsx scripts/reset-password.ts BENUTZERNAME` |
 | Fahrzeugbestand erneut abgleichen | `docker compose exec app npx tsx prisma/fahrzeuge-goehl.ts` (legt nur Fehlendes an) |
@@ -91,7 +91,7 @@ Liegen in `/opt/drk-kfz-warte/deploy/backups` (Datenbank + Fotos/Anhänge, 30 Ta
 ### Update auf eine neue Version
 ```bash
 cd /opt && unzip -o drk-kfz-warte-NEU.zip     # überschreibt Programmdateien, deploy/.env und Backups bleiben
-sudo bash /opt/drk-kfz-warte/deploy/update.sh # Backup → neu bauen → Migrationen laufen automatisch
+bash /opt/drk-kfz-warte/deploy/update.sh # Backup → neu bauen → Migrationen laufen automatisch
 ```
 
 ## Sicherheitsempfehlungen

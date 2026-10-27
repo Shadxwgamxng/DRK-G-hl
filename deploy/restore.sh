@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wiederherstellung:  sudo bash deploy/restore.sh backups/db_DATUM.dump backups/uploads_DATUM.tar.gz
+# Wiederherstellung:  bash deploy/restore.sh backups/db_DATUM.dump backups/uploads_DATUM.tar.gz
 # ACHTUNG: überschreibt die aktuelle Datenbank und alle Anhänge!
 set -euo pipefail
 cd "$(dirname "$0")"

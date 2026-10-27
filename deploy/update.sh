@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Update: neues Paket über das alte Verzeichnis entpacken (deploy/.env bleibt erhalten) oder git pull,
-# dann:  sudo bash deploy/update.sh
+# dann:  bash deploy/update.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 ./backup.sh
