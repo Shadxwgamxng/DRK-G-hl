@@ -20,6 +20,7 @@ export default async function VehiclePage({ params, searchParams }: { params: Pr
   const { id } = await params;
   const sp = await searchParams;
   const v = await notFoundOnError(() => getVehicle(actor, id));
+  const canPlanInspections = can(actor, "inspections.manage") && can(actor, "inspections.view");
   const openDefects = await listDefects(actor, { vehicleId: id, status: "open" }, 10);
   const criticalOpen = openDefects.filter((d) => d.severity === "CRITICAL" && d.status !== "RESOLVED");
   const readinessDoubt = openDefects.filter((d) => d.affectsReadiness && d.status !== "RESOLVED");
@@ -70,7 +71,7 @@ export default async function VehiclePage({ params, searchParams }: { params: Pr
             items={[
               ["Letzte Kontrolle", v.lastCheck ? `${fmtDateTime(v.lastCheck.performedAt)} – ${v.lastCheck.performedBy.firstName} ${v.lastCheck.performedBy.lastName}` : "Noch keine Kontrolle"],
               ["Nächste Kontrolle", <CheckDue key="nc" v={v} />],
-              ["Nächste HU", v.nextHu ? <DueBadge date={v.nextHu.dueDate} days={daysUntil(v.nextHu.dueDate)} /> : "nicht geplant"],
+              ["Nächster TÜV (HU)", v.nextHu ? <DueBadge date={v.nextHu.dueDate} days={daysUntil(v.nextHu.dueDate)} /> : canPlanInspections ? <Link href={`/fahrzeuge/${id}/termine?art=HU#neu`} className="text-link">nicht eingetragen – TÜV eintragen</Link> : "nicht eingetragen"],
               ["Nächste Wartung / Prüfung", v.nextMaintenance ? <span>{v.nextMaintenance.title}: <DueBadge date={v.nextMaintenance.dueDate} days={daysUntil(v.nextMaintenance.dueDate)} /></span> : "nicht geplant"],
               ["Offene Mängel", `${v.openDefects}${v.criticalDefects ? ` (davon ${v.criticalDefects} kritisch)` : ""}`],
               ["Material", `${v.missingMaterials} Position(en) unter Soll · ${v.expiredBatches} abgelaufen · ${v.expiringBatches} bald ablaufend`],

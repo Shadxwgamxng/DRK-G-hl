@@ -56,7 +56,7 @@ export async function buildReport(actor: Actor, type: string, p: ReportParams): 
       const vs = await summarizeVehicles(actor, { where: p.vehicleId ? { id: p.vehicleId } : {} });
       return {
         title: REPORT_TYPES.fahrzeuge,
-        columns: ["Fahrzeug", "Kennzeichen", "Typ", "Status", "Letzte Kontrolle", "Nächste Kontrolle", "Nächste HU", "Nächste Wartung", "Offene Mängel", "Fehlendes Material", "Abgelaufen", "Bald ablaufend"],
+        columns: ["Fahrzeug", "Kennzeichen", "Typ", "Status", "Letzte Kontrolle", "Nächste Kontrolle", "Nächster TÜV", "Nächste Wartung", "Offene Mängel", "Fehlendes Material", "Abgelaufen", "Bald ablaufend"],
         rows: vs.map((v) => [
           v.name,
           v.licensePlate ?? "",

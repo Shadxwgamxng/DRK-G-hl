@@ -11,9 +11,10 @@ import { createInspectionAction } from "@/app/actions/inspections";
 import { fmtDate } from "@/lib/format";
 import { INTERVAL_UNIT } from "@/lib/labels";
 
-export default async function VehicleInspections({ params }: { params: Promise<{ id: string }> }) {
+export default async function VehicleInspections({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ art?: string }> }) {
   const actor = await requireActiveActor("inspections.view");
   const { id } = await params;
+  const { art } = await searchParams;
   const list = await listInspections(actor, { vehicleId: id });
   const manage = can(actor, "inspections.manage");
   const [types, users] = manage ? await Promise.all([listInspectionTypes(), assignableUsers()]) : [[], []];
@@ -21,7 +22,7 @@ export default async function VehicleInspections({ params }: { params: Promise<{
     <div className="space-y-5">
       <Card title="Prüf- und Wartungstermine" padded={list.length === 0}>
         {list.length === 0 ? (
-          <EmptyState icon={<CalendarClock className="h-10 w-10" />} title="Keine Termine geplant">Legen Sie HU, Wartungen und Geräteprüfungen mit individuellen Intervallen an.</EmptyState>
+          <EmptyState icon={<CalendarClock className="h-10 w-10" />} title="Keine Termine geplant">Legen Sie TÜV (HU), Wartungen und Geräteprüfungen mit individuellen Intervallen an.</EmptyState>
         ) : (
           <TableWrap>
             <table className="table-base">
@@ -43,9 +44,11 @@ export default async function VehicleInspections({ params }: { params: Promise<{
         )}
       </Card>
       {manage && (
-        <Card title="Neuen Termin anlegen">
-          <InspectionForm action={createInspectionAction.bind(null, id)} types={types} users={users} submitLabel="Termin anlegen" />
-        </Card>
+        <div id="neu" className="scroll-mt-4">
+          <Card title="Neuen Termin anlegen">
+            <InspectionForm action={createInspectionAction.bind(null, id)} types={types} users={users} defaultTypeId={types.find((t) => t.key === art)?.id} submitLabel="Termin anlegen" />
+          </Card>
+        </div>
       )}
     </div>
   );

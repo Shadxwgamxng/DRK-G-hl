@@ -17,9 +17,9 @@ const VEHICLE_TYPES = [
 ];
 
 // Bewusst OHNE voreingestellte Intervalle: Fristen hängen vom Fahrzeug/Gerät ab und werden je Termin konfiguriert.
-const INSPECTION_TYPES: { key?: string; name: string; description: string }[] = [
-  { key: "HU", name: "Hauptuntersuchung (HU)", description: "Hauptuntersuchung nach StVZO" },
-  { key: "SP", name: "Sicherheitsprüfung (SP)", description: "Nur falls für das Fahrzeug relevant" },
+const INSPECTION_TYPES: { key?: string; name: string; description: string; legacyName?: string }[] = [
+  { key: "HU", name: "TÜV – Hauptuntersuchung (HU/AU)", description: "Hauptuntersuchung inkl. Abgasuntersuchung nach § 29 StVZO (TÜV, DEKRA, GTÜ …)", legacyName: "Hauptuntersuchung (HU)" },
+  { key: "SP", name: "TÜV – Sicherheitsprüfung (SP)", description: "Nur falls für das Fahrzeug relevant (z. B. Lkw über 7,5 t)", legacyName: "Sicherheitsprüfung (SP)" },
   { key: "SERVICE", name: "Inspektion / Wartung", description: "Herstellervorgaben beachten" },
   { name: "Ölwechsel", description: "" },
   { name: "Reifenwechsel", description: "" },
@@ -84,6 +84,8 @@ async function main() {
   for (const t of INSPECTION_TYPES) {
     const existing = await db.inspectionType.findFirst({ where: { OR: [{ name: t.name }, ...(t.key ? [{ key: t.key }] : [])] } });
     if (!existing) await db.inspectionType.create({ data: { key: t.key, name: t.name, description: t.description || null } });
+    // Frühere Standardbezeichnung (ohne „TÜV“) übernehmen – von Admins umbenannte Arten bleiben unverändert
+    else if (t.legacyName && existing.name === t.legacyName) await db.inspectionType.update({ where: { id: existing.id }, data: { name: t.name, description: t.description } });
   }
   for (const [i, [name, isMedication]] of CATEGORIES.entries()) {
     await db.materialCategory.upsert({ where: { name }, create: { name, isMedication, sortOrder: i * 10 }, update: {} });

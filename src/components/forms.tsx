@@ -70,7 +70,7 @@ export function SubmitButton({ children, variant = "primary", size = "md", class
   );
 }
 
-type InputProps = { label: string; name: string; required?: boolean; hint?: ReactNode; className?: string } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "name">;
+type InputProps = { label: string; name: string; required?: boolean; hint?: ReactNode; className?: string } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "name"> & { ref?: React.Ref<HTMLInputElement> };
 
 export function TextInput({ label, name, required, hint, className, ...rest }: InputProps) {
   const errors = useFormErrors();

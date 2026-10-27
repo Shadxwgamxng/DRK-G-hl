@@ -12,7 +12,7 @@ const HINTS: Record<string, string> = {
   fahrzeughistorie: "Alle protokollierten Änderungen eines Fahrzeugs (Fahrzeug wählen)",
   kontrollen: "Durchgeführte Fahrzeugkontrollen im Zeitraum",
   maengel: "Mängel mit Status, Schweregrad und Zuständigkeit",
-  termine: "HU-, Prüf- und Wartungstermine",
+  termine: "TÜV-, Prüf- und Wartungstermine",
   bestand: "Soll-/Ist-Bestände inkl. Chargen und Lagerorte",
   verfall: "Abgelaufene und bald ablaufende Chargen (Fahrzeuge und Lager)",
   bewegungen: "Alle Zu- und Abgänge im Zeitraum",

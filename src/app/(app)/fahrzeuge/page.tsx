@@ -95,7 +95,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                   <th>Status</th>
                   <th>Letzte Kontrolle</th>
                   <th>Nächste Kontrolle</th>
-                  <th>Nächste HU</th>
+                  <th>Nächster TÜV</th>
                   <th>Nächste Wartung</th>
                   <th className="text-right">Mängel</th>
                   <th className="text-right">Fehlend</th>

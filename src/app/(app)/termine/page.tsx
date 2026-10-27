@@ -18,7 +18,7 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
     <>
       <PageHeader
         title="Prüfungen & Termine"
-        subtitle="HU, Sicherheitsprüfungen, Wartungen und Geräteprüfungen aller sichtbaren Fahrzeuge"
+        subtitle="TÜV (HU/SP), Wartungen und Geräteprüfungen aller sichtbaren Fahrzeuge"
         actions={<LinkButton variant="secondary" href={`/api/export/termine?format=pdf${sp.vehicleId ? `&vehicleId=${sp.vehicleId}` : ""}`} prefetch={false}>PDF-Übersicht</LinkButton>}
       />
       <form className="filterbar mb-4 grid gap-3 p-3 sm:grid-cols-4">

@@ -34,7 +34,7 @@ export function VehicleCards({ vehicles }: { vehicles: VehicleSummary[] }) {
                 <dd><CheckDue v={v} /></dd>
               </div>
               <div>
-                <dt className="text-xs text-gray-500">Nächste HU</dt>
+                <dt className="text-xs text-gray-500">Nächster TÜV</dt>
                 <dd>{v.nextHu ? <DueBadge date={v.nextHu.dueDate} days={daysUntil(v.nextHu.dueDate)} warnDays={Math.max(0, ...v.nextHu.reminderDays)} /> : <span className="text-gray-500">–</span>}</dd>
               </div>
               <div>

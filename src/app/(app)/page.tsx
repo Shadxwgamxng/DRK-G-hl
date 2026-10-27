@@ -58,7 +58,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <StatTile label="Außer Dienst" value={k.outOfService} icon={<CircleSlash className="h-6 w-6" />} href="/fahrzeuge?status=OUT_OF_SERVICE" />
             <StatTile label="Kontrollen fällig (Monat)" value={k.checksDueToday} tone={k.checksDueToday ? "yellow" : "gray"} hint="noch nicht kontrolliert" icon={<ClipboardCheck className="h-6 w-6" />} />
             <StatTile label="Kontrollen überfällig" value={k.checksOverdue} tone={k.checksOverdue ? "red" : "gray"} icon={<Timer className="h-6 w-6" />} />
-            {can(actor, "inspections.view") && <StatTile label="HU/Wartung (30 Tage)" value={k.upcomingInspections} tone={k.overdueInspections ? "red" : k.upcomingInspections ? "yellow" : "gray"} hint={k.overdueInspections ? `${k.overdueInspections} überfällig` : undefined} icon={<CalendarClock className="h-6 w-6" />} href="/termine" />}
+            {can(actor, "inspections.view") && <StatTile label="TÜV/Wartung (30 Tage)" value={k.upcomingInspections} tone={k.overdueInspections ? "red" : k.upcomingInspections ? "yellow" : "gray"} hint={k.overdueInspections ? `${k.overdueInspections} überfällig` : undefined} icon={<CalendarClock className="h-6 w-6" />} href="/termine" />}
             <StatTile label="Offene Mängel" value={k.openDefects} tone={k.openDefects ? "orange" : "gray"} icon={<AlertTriangle className="h-6 w-6" />} href="/maengel" />
             <StatTile label="Kritische Mängel" value={k.criticalDefects} tone={k.criticalDefects ? "red" : "gray"} icon={<AlertOctagon className="h-6 w-6" />} href="/maengel?severity=CRITICAL" />
             {can(actor, "materials.view") && (
@@ -97,7 +97,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               )}
             </Card>
             {can(actor, "inspections.view") && (
-              <Card title="Anstehende HU-, Prüf- und Wartungstermine" actions={<Link href="/termine" className="text-sm font-bold text-drkblue-700 hover:text-drkblue-600">Alle</Link>}>
+              <Card title="Anstehende TÜV-, Prüf- und Wartungstermine" actions={<Link href="/termine" className="text-sm font-bold text-drkblue-700 hover:text-drkblue-600">Alle</Link>}>
                 {d.upcomingInspections.length === 0 ? (
                   <p className="text-sm text-gray-600">Keine Termine in den nächsten 30 Tagen.</p>
                 ) : (

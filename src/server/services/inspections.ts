@@ -184,8 +184,12 @@ export async function completeInspection(actor: Actor, id: string, input: unknow
 
 // ───────────── Prüfungsarten ─────────────
 
+const TYPE_ORDER = ["HU", "SP"]; // TÜV-Prüfungen zuerst
+
 export async function listInspectionTypes(includeArchived = false) {
-  return db.inspectionType.findMany({ where: includeArchived ? {} : { archived: false }, orderBy: { name: "asc" } });
+  const types = await db.inspectionType.findMany({ where: includeArchived ? {} : { archived: false }, orderBy: { name: "asc" } });
+  const rank = (key: string | null) => (key && TYPE_ORDER.includes(key) ? TYPE_ORDER.indexOf(key) : TYPE_ORDER.length);
+  return types.sort((a, b) => rank(a.key) - rank(b.key));
 }
 
 export async function upsertInspectionType(actor: Actor, input: unknown) {
