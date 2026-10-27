@@ -1,5 +1,7 @@
 # Installation & Deployment
 
+> **Root-Server mit automatischem HTTPS, Backups und Cronjobs:** siehe [INSTALLATION-ROOTSERVER.md](INSTALLATION-ROOTSERVER.md) (`sudo bash deploy/install.sh`).
+
 ## Voraussetzungen
 - Linux-Server, Docker + Docker Compose **oder** Node.js 22 und PostgreSQL 16
 - Domain mit TLS (HTTPS ist Pflicht für PWA, Kamera und sichere Cookies)

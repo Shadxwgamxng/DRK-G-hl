@@ -1,0 +1,13 @@
+{
+	email {$ACME_EMAIL}
+}
+
+# HTTPS-Zertifikat wird automatisch über Let's Encrypt bezogen und erneuert.
+{$DOMAIN} {
+	encode zstd gzip
+	request_body {
+		max_size 20MB
+	}
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy app:3000
+}

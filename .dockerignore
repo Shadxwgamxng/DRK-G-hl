@@ -3,3 +3,12 @@ node_modules
 .git
 storage
 .env
+deploy/.env
+deploy/backups
+tests
+test-results
+docs
+coverage
+*.tsbuildinfo
+# Produktiv-Image enthält keinen Demo-Modus
+prisma/demo.ts

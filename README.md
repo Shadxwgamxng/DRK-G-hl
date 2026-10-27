@@ -6,6 +6,7 @@ Web-App (installierbar als PWA) zur Verwaltung von Einsatzfahrzeugen, Fahrzeugko
 |---|---|
 | Architektur, Datenmodell, Datenflüsse, Designentscheidungen | [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md) |
 | Benutzerrollen und Berechtigungen | [docs/ROLLEN.md](docs/ROLLEN.md) |
+| **Installation auf eigenem Root-Server (Schritt für Schritt)** | [docs/INSTALLATION-ROOTSERVER.md](docs/INSTALLATION-ROOTSERVER.md) |
 | Installation, Deployment, Cron, PWA (Android/iOS) | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 | Datenbank-Backup & Wiederherstellung, Löschkonzept | [docs/BACKUP.md](docs/BACKUP.md) |
 | Abnahmetests und Teststatus | [docs/TESTS.md](docs/TESTS.md) |
