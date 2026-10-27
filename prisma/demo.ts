@@ -6,7 +6,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { loadActor } from "../src/server/auth/session";
-import { createVehicle } from "../src/server/services/vehicles";
+import { importFleet } from "./fleet-goehl";
 import { createInspection } from "../src/server/services/inspections";
 import { createMaterial, createVehicleStock, writeOffMaterial, listVehicleStock } from "../src/server/services/materials";
 import { receiveStock } from "../src/server/services/warehouse";
@@ -42,10 +42,13 @@ async function main() {
   await mk("demo.neu", "Nora", "Neu", "USER").then((u) => db.user.update({ where: { id: u.id }, data: { status: "PENDING", approvedAt: null } }));
 
   const A = (await loadActor(admin.id))!;
-  const types = Object.fromEntries((await db.vehicleType.findMany()).map((t) => [t.name, t.id]));
-  const rtw = await createVehicle(A, { name: "RTW 1", radioCallSign: "Rotkreuz Göhl 83-1 (Demo)", internalNumber: "DEMO-01", licensePlate: "DEMO-RK 831", typeId: types.RTW, manufacturer: "Mercedes-Benz", model: "Sprinter", buildYear: "2021", mileage: "84210", location: "Halle 1, Stellplatz 1", responsibleUserId: wart.id, checkIntervalDays: "7" });
-  const ktw = await createVehicle(A, { name: "KTW 1", internalNumber: "DEMO-02", licensePlate: "DEMO-RK 851", typeId: types.KTW, manufacturer: "Volkswagen", model: "T6", buildYear: "2019", mileage: "122400", location: "Halle 1, Stellplatz 2", responsibleUserId: wart.id, checkIntervalDays: "7" });
-  const mtw = await createVehicle(A, { name: "MTW 1", internalNumber: "DEMO-03", licensePlate: "DEMO-RK 191", typeId: types.MTW, mileage: "45000", location: "Halle 2", checkIntervalDays: "14" });
+  // Echter Fahrzeugbestand des OV Göhl (Stammdaten), ergänzt um fiktive Demo-Vorgänge
+  await importFleet(db);
+  const byNo = async (n: string) => db.vehicle.findUniqueOrThrow({ where: { internalNumber: n } });
+  const rtw = await db.vehicle.update({ where: { id: (await byNo("42/83-01")).id }, data: { mileage: 84210, responsibleUserId: wart.id, location: "DRK OV Göhl, Halle" } });
+  const ktw = await db.vehicle.update({ where: { id: (await byNo("42/90-01")).id }, data: { mileage: 122400, responsibleUserId: wart.id } });
+  const mtw = await byNo("42/99-01");
+  await db.vehicleAssignment.createMany({ data: [rtw, ktw].map((v) => ({ userId: wart.id, vehicleId: v.id })), skipDuplicates: true });
   await db.vehicleAssignment.createMany({ data: [{ userId: helfer.id, vehicleId: rtw.id }, { userId: lager.id, vehicleId: rtw.id }, { userId: lager.id, vehicleId: ktw.id }, { userId: wart.id, vehicleId: mtw.id }], skipDuplicates: true });
 
   const today = berlinToday();

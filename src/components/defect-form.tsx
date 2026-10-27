@@ -8,7 +8,7 @@ import { DEFECT_CATEGORY, DEFECT_SEVERITY } from "@/lib/labels";
 import { LocalFilePicker } from "./Uploader";
 import { Alert, Button } from "./ui";
 
-type Vehicle = { id: string; name: string; licensePlate: string; mileage: number | null };
+type Vehicle = { id: string; name: string; licensePlate: string | null; mileage: number | null };
 
 export function DefectForm({ userId, vehicles, defaultVehicleId, draftId, canAssign, users }: { userId: string; vehicles: Vehicle[]; defaultVehicleId?: string; draftId?: string; canAssign: boolean; users: { id: string; firstName: string; lastName: string }[] }) {
   const router = useRouter();
@@ -88,7 +88,7 @@ export function DefectForm({ userId, vehicles, defaultVehicleId, draftId, canAss
           <label className="label" htmlFor="df-vehicleId">Betroffenes Fahrzeug *</label>
           <select className="input" value={f.vehicleId} onChange={(e) => set("vehicleId", e.target.value)} {...field("vehicleId")}>
             <option value="">Bitte wählen</option>
-            {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name} ({v.licensePlate})</option>)}
+            {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}{v.licensePlate ? ` (${v.licensePlate})` : ""}</option>)}
           </select>
           <Err k="vehicleId" />
         </div>

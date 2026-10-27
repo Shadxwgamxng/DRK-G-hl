@@ -59,7 +59,7 @@ export async function buildReport(actor: Actor, type: string, p: ReportParams): 
         columns: ["Fahrzeug", "Kennzeichen", "Typ", "Status", "Letzte Kontrolle", "Nächste Kontrolle", "Nächste HU", "Nächste Wartung", "Offene Mängel", "Fehlendes Material", "Abgelaufen", "Bald ablaufend"],
         rows: vs.map((v) => [
           v.name,
-          v.licensePlate,
+          v.licensePlate ?? "",
           v.type.name,
           VEHICLE_STATUS[v.status],
           fmtDate(v.lastCheck?.performedAt),
@@ -83,7 +83,7 @@ export async function buildReport(actor: Actor, type: string, p: ReportParams): 
         take: 2000,
       });
       return {
-        title: `${REPORT_TYPES.fahrzeughistorie}: ${v.name} (${v.licensePlate})`,
+        title: `${REPORT_TYPES.fahrzeughistorie}: ${v.name}${v.licensePlate ? ` (${v.licensePlate})` : ""}`,
         subtitle: period,
         columns: ["Zeitpunkt", "Benutzer", "Aktion", "Datensatz", "Details"],
         rows: logs.map((l) => [fmtDateTime(l.createdAt), name(l.user), AUDIT_ACTION[l.action] ?? l.action, l.entityType, compactJson(l.newValues)]),

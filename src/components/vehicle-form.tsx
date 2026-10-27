@@ -9,7 +9,7 @@ type V = {
   name?: string;
   radioCallSign?: string | null;
   internalNumber?: string;
-  licensePlate?: string;
+  licensePlate?: string | null;
   typeId?: string;
   manufacturer?: string | null;
   model?: string | null;
@@ -41,7 +41,7 @@ export function VehicleForm({
         <TextInput label="Fahrzeugname" name="name" defaultValue={vehicle.name} required placeholder="z. B. RTW 1" />
         <TextInput label="Funkrufname" name="radioCallSign" defaultValue={vehicle.radioCallSign ?? ""} placeholder="z. B. Rotkreuz Göhl 83-1" />
         <TextInput label="Interne Fahrzeugnummer" name="internalNumber" defaultValue={vehicle.internalNumber} required />
-        <TextInput label="Kennzeichen" name="licensePlate" defaultValue={vehicle.licensePlate} required autoCapitalize="characters" />
+        <TextInput label="Kennzeichen" name="licensePlate" defaultValue={vehicle.licensePlate ?? ""} autoCapitalize="characters" hint="Leer lassen bei Geräten ohne Zulassung (z. B. Feldkochherd)" />
         <SelectInput label="Fahrzeugtyp" name="typeId" defaultValue={vehicle.typeId} required placeholder="Bitte wählen" options={types.map((t) => ({ value: t.id, label: t.name }))} hint="Weitere Typen unter Einstellungen anlegen" />
         <TextInput label="Kontrollintervall (Tage)" name="checkIntervalDays" type="number" inputMode="numeric" min={1} max={365} defaultValue={vehicle.checkIntervalDays ?? 7} required hint="Nach wie vielen Tagen die nächste Fahrzeugkontrolle fällig ist" />
         <TextInput label="Hersteller" name="manufacturer" defaultValue={vehicle.manufacturer ?? ""} />

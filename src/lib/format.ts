@@ -65,6 +65,11 @@ export function toDateInput(d: D) {
   return x ? x.toISOString().slice(0, 10) : "";
 }
 
+/** Kennzeichen-Anzeige (optional, z. B. Feldkochherd) */
+export function plate(p: string | null | undefined) {
+  return p || "ohne Kennzeichen";
+}
+
 export function relativeDays(n: number | null) {
   if (n == null) return "";
   if (n === 0) return "heute";

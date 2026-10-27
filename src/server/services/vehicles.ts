@@ -19,7 +19,7 @@ const vehicleSchema = z.object({
   name: reqText(100),
   radioCallSign: optText(60),
   internalNumber: reqText(40),
-  licensePlate: z.preprocess((v) => (typeof v === "string" ? v.trim().toUpperCase().replace(/\s+/g, " ") : v), z.string().min(1).max(20)),
+  licensePlate: z.preprocess((v) => (typeof v === "string" ? v.trim().toUpperCase().replace(/\s+/g, " ") || undefined : v ?? undefined), z.string().max(20).optional()),
   typeId: z.string().min(1, "Bitte Fahrzeugtyp wählen"),
   manufacturer: optText(80),
   model: optText(80),
@@ -49,7 +49,7 @@ export async function summarizeVehicles(actor: Actor, opts: { where?: Prisma.Veh
       checks: { orderBy: { performedAt: "desc" }, take: 1, include: { performedBy: { select: { firstName: true, lastName: true } } } },
       inspections: { where: { active: true }, orderBy: { dueDate: "asc" }, include: { type: true } },
     },
-    orderBy: [{ archivedAt: "asc" }, { name: "asc" }],
+    orderBy: [{ archivedAt: "asc" }, { internalNumber: "asc" }],
   });
   const ids = vehicles.map((v) => v.id);
   if (ids.length === 0) return [];
@@ -115,14 +115,14 @@ async function validateRefs(d: z.infer<typeof vehicleSchema>) {
   }
 }
 
-async function ensureUnique(d: { internalNumber: string; licensePlate: string }, exceptId?: string) {
+async function ensureUnique(d: { internalNumber: string; licensePlate?: string }, exceptId?: string) {
   const dup = await db.vehicle.findFirst({
-    where: { OR: [{ internalNumber: d.internalNumber }, { licensePlate: d.licensePlate }], ...(exceptId ? { id: { not: exceptId } } : {}) },
+    where: { OR: [{ internalNumber: d.internalNumber }, ...(d.licensePlate ? [{ licensePlate: d.licensePlate }] : [])], ...(exceptId ? { id: { not: exceptId } } : {}) },
   });
   if (dup) {
     const fe: Record<string, string> = {};
     if (dup.internalNumber === d.internalNumber) fe.internalNumber = "Fahrzeugnummer bereits vergeben";
-    if (dup.licensePlate === d.licensePlate) fe.licensePlate = "Kennzeichen bereits vergeben";
+    if (d.licensePlate && dup.licensePlate === d.licensePlate) fe.licensePlate = "Kennzeichen bereits vergeben";
     throw invalid("Fahrzeug existiert bereits.", fe);
   }
 }
@@ -153,10 +153,12 @@ export async function updateVehicle(actor: Actor, vehicleId: string, input: unkn
   const d = parse(vehicleSchema, input);
   await validateRefs(d);
   await ensureUnique(d, vehicleId);
-  const { oldValues, newValues, changed } = diff(before as unknown as Record<string, unknown>, d);
+  // Geleerte optionale Felder explizit auf null setzen
+  const data = Object.fromEntries(Object.keys(vehicleSchema.shape).map((k) => [k, (d as Record<string, unknown>)[k] ?? null])) as typeof d;
+  const { oldValues, newValues, changed } = diff(before as unknown as Record<string, unknown>, data);
   await db.$transaction(async (tx) => {
     if (changed) {
-      await tx.vehicle.update({ where: { id: vehicleId }, data: d });
+      await tx.vehicle.update({ where: { id: vehicleId }, data });
       await audit(actor, { action: "vehicle.update", entityType: "Vehicle", entityId: vehicleId, vehicleId, oldValues, newValues }, tx);
     }
     if (d.responsibleUserId && d.responsibleUserId !== before.responsibleUserId) {

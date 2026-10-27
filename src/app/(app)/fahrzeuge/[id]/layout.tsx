@@ -26,7 +26,7 @@ export default async function VehicleLayout({ children, params }: { children: Re
         {v.archivedAt && <Badge tone="dark">Archiviert</Badge>}
       </div>
       <p className="-mt-2 mb-3 text-sm text-gray-600">
-        {v.licensePlate}
+        {v.licensePlate ?? "ohne Kennzeichen"}
         {v.radioCallSign ? ` · Funkrufname ${v.radioCallSign}` : ""} · Nr. {v.internalNumber}
       </p>
       <VehicleTabs id={id} tabs={tabs} />

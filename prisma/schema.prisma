@@ -137,7 +137,7 @@ model Vehicle {
   name              String
   radioCallSign     String?
   internalNumber    String        @unique
-  licensePlate      String        @unique
+  licensePlate      String?       @unique // optional, z. B. für Feldkochherd oder noch nicht zugelassene Fahrzeuge
   typeId            String
   type              VehicleType   @relation(fields: [typeId], references: [id])
   manufacturer      String?

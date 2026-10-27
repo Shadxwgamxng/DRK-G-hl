@@ -27,7 +27,7 @@ export default async function DefectDetail({ params, searchParams }: { params: P
 
   return (
     <>
-      <PageHeader title={d.title} subtitle={<Link href={`/fahrzeuge/${d.vehicleId}`} className="hover:text-drkblue-600">{d.vehicle.name} · {d.vehicle.licensePlate}</Link>} back={{ href: "/maengel", label: "Mängel" }} />
+      <PageHeader title={d.title} subtitle={<Link href={`/fahrzeuge/${d.vehicleId}`} className="hover:text-drkblue-600">{d.vehicle.name}{d.vehicle.licensePlate ? ` · ${d.vehicle.licensePlate}` : ""}</Link>} back={{ href: "/maengel", label: "Mängel" }} />
       <div className="space-y-5">
         {sp.neu && <Alert tone="success" title="Mangel gemeldet. Die Verantwortlichen wurden benachrichtigt." />}
         {critical && (

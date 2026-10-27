@@ -13,6 +13,7 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:demo": "tsx prisma/demo.ts",
+    "db:fahrzeuge": "tsx prisma/fahrzeuge-goehl.ts",
     "reminders": "tsx scripts/run-reminders.ts",
     "test": "vitest run",
     "test:watch": "vitest"

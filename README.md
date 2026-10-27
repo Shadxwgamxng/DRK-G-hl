@@ -28,6 +28,7 @@ cp .env.example .env              # DATABASE_URL, SEED_ADMIN_* und CRON_SECRET a
 npm install
 npx prisma migrate deploy         # Schema + Integritätsregeln (Trigger, CHECKs, partielle Indizes)
 npm run db:seed                   # Rollen, Rechte, Stammdaten, Erst-Administrator
+npm run db:fahrzeuge              # Fahrzeugbestand DRK OV Göhl anlegen (mehrfach ausführbar, überschreibt nichts)
 npm run dev                       # http://localhost:3000
 ```
 
@@ -47,6 +48,12 @@ DATABASE_URL=…/drk_kfz_demo npm run db:seed
 DATABASE_URL=…/drk_kfz_demo DEMO_MODE=true npm run db:demo
 # Anmeldung: demo.admin / demo.kfzwart / demo.helfer / demo.lager – Passwort „Demo-Passwort1“
 ```
+
+## Fahrzeugbestand DRK OV Göhl
+
+`prisma/fleet-goehl.ts` enthält die 11 Fahrzeuge/Einsatzmittel des Ortsvereins (8 Fahrzeuge mit Funkrufnamen „Rotkreuz Ostholstein 42/…“, Feldkochherd, Verpflegungs- und Logistikanhänger). Kennzeichen, Klassifizierung und Hersteller stammen von bos-fahrzeuge.info (Stand 27.10.2026); die Detailseiten (Modell, Baujahr, Aufbau) sind dort durch eine Bot-Prüfung geschützt und wurden nicht übernommen.
+
+**Noch nachzutragen:** Kennzeichen/Hersteller RTW T1 (42/83-01, dort nicht gelistet), Kennzeichen Feldkochherd und beide Anhänger, für alle Modell, Baujahr, Erstzulassung, Kilometerstand. Auf bos-fahrzeuge.info sind ein „Betreuungs- und Verpflegungs-AnH“ (OH-RK 4001) und ein „Material-Anhänger“ (Böckmann, KI-AW 22) als außer Dienst geführt – ggf. identisch mit den aktuellen Anhängern.
 
 ## Getroffene Standardentscheidungen
 

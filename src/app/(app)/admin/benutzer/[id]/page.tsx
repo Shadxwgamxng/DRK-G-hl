@@ -31,7 +31,7 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
         {vehicles.map((v) => (
           <label key={v.id} className="flex min-h-11 items-center gap-3 rounded-lg px-2 hover:bg-gray-50">
             <input type={multi ? "checkbox" : "radio"} name="vehicleIds" value={v.id} defaultChecked={assigned.has(v.id)} className="h-5 w-5 accent-drk-500" />
-            <span className="text-sm">{v.name} <span className="text-gray-500">({v.licensePlate})</span></span>
+            <span className="text-sm">{v.name} {v.licensePlate && <span className="text-gray-500">({v.licensePlate})</span>}</span>
           </label>
         ))}
         {!multi && (

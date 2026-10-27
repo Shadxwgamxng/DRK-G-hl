@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AlertOctagon, AlertTriangle, ClipboardCheck, Package, PackageX } from "lucide-react";
 import type { VehicleSummary } from "@/server/services/vehicles";
-import { daysUntil, fmtDate } from "@/lib/format";
+import { daysUntil, fmtDate, plate } from "@/lib/format";
 import { DueBadge, VehicleStatusBadge } from "./status";
 import { Badge } from "./ui";
 
@@ -17,7 +17,7 @@ export function VehicleCards({ vehicles }: { vehicles: VehicleSummary[] }) {
               <div className="min-w-0">
                 <p className="truncate text-lg font-bold">{v.name}</p>
                 <p className="text-sm text-gray-600">
-                  {v.licensePlate} · {v.type.name}
+                  {plate(v.licensePlate)} · {v.type.name}
                   {v.radioCallSign ? ` · ${v.radioCallSign}` : ""}
                 </p>
               </div>

@@ -110,7 +110,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                         {v.name}
                       </Link>
                       <div className="text-xs text-gray-500">
-                        {v.licensePlate} · {v.type.name}
+                        {v.licensePlate ?? "ohne Kennzeichen"} · {v.type.name}
                       </div>
                     </td>
                     <td>

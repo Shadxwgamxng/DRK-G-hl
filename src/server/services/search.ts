@@ -16,7 +16,7 @@ export async function globalSearch(actor: Actor, q: string): Promise<SearchHit[]
     where: { AND: [vehicleWhere(actor, true), { OR: [{ name: contains }, { licensePlate: contains }, { radioCallSign: contains }, { internalNumber: contains }] }] },
     take: 10,
   });
-  hits.push(...vehicles.map((v) => ({ type: "Fahrzeug", title: v.name, subtitle: `${v.licensePlate}${v.radioCallSign ? ` · ${v.radioCallSign}` : ""}`, href: `/fahrzeuge/${v.id}` })));
+  hits.push(...vehicles.map((v) => ({ type: "Fahrzeug", title: v.name, subtitle: [v.licensePlate, v.radioCallSign].filter(Boolean).join(" · "), href: `/fahrzeuge/${v.id}` })));
 
   const defects = await db.defect.findMany({
     where: { ...viaVehicle(actor), OR: [{ title: contains }, { description: contains }] },
