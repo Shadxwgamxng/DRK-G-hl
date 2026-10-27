@@ -49,7 +49,7 @@ DATABASE_URL=…/drk_kfz_demo DEMO_MODE=true npm run db:demo
 
 ## Getroffene Standardentscheidungen
 
-- **Keine DRK-Logos/Rotkreuz-Embleme:** Es wurden keine Markendateien bereitgestellt, daher neutrales „KW“-Icon in DRK-Rot. Logo kann in `public/icons/` ersetzt werden.
+- **Logo:** Das vom Ortsverein bereitgestellte Logo („Deutsches Rotes Kreuz – Ortsverein Göhl e.V. Bereitschaft“) liegt in `public/brand/` (Original, transparente Fassung für helle und für dunkle Hintergründe) und wird in Sidebar, Anmeldung, Offline-Seite und PDF-Berichten verwendet. App-Icons zeigen das Rotkreuz-Zeichen aus dem Logo (`public/icons/`). Die Logofassungen wurden aus einer 430×93-px-Vorlage erzeugt – bei Bedarf durch eine hochauflösende Datei/SVG des Landesverbands ersetzen.
 - **Zugriff ohne Fahrzeugzuweisung = nichts sichtbar** (außer Administratoren mit „Alle Fahrzeuge sehen“).
 - **Fahrzeugfreigabe nie automatisch:** Das Schließen eines Mangels ändert den Fahrzeugstatus nicht.
 - **Prüfintervalle ohne gesetzliche Voreinstellungen;** je Termin konfigurierbar, Erinnerungen standardmäßig 30/14/7 Tage.

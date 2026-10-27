@@ -4,14 +4,14 @@
  *   Offline-Anzeige vorgehalten (network-first). Beim Abmelden wird dieser Cache gelöscht.
  * - API-Aufrufe und Dateien (Fotos/Dokumente) werden NIE im Cache abgelegt.
  */
-const STATIC = "drk-static-v1";
+const STATIC = "drk-static-v2";
 const PAGES = "drk-pages";
 const OFFLINE_URL = "/offline";
 const PAGE_ALLOW = [/^\/$/, /^\/fahrzeuge(\/[^/]+)?$/, /^\/fahrzeuge\/[^/]+\/(kontrolle|material)$/, /^\/maengel\/neu$/, /^\/sync$/];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(STATIC).then((c) => c.addAll([OFFLINE_URL, "/manifest.webmanifest", "/icons/icon-192.png"])).then(() => self.skipWaiting()),
+    caches.open(STATIC).then((c) => c.addAll([OFFLINE_URL, "/manifest.webmanifest", "/icons/icon-192.png", "/brand/drk-goehl-logo.png"])).then(() => self.skipWaiting()),
   );
 });
 
@@ -32,7 +32,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return; // niemals cachen
 
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
+  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/") || url.pathname.startsWith("/brand/")) {
     event.respondWith(
       caches.match(req).then(
         (hit) =>

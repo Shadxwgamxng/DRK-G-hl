@@ -1,4 +1,6 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage } from "pdf-lib";
 import { fmtDate, fmtDateTime, fmtEuro } from "@/lib/format";
 import {
   AUDIT_ACTION,
@@ -249,6 +251,12 @@ export async function toPdf(r: Report, actor: Actor) {
   pdf.setTitle(r.title);
   pdf.setProducer("DRK Göhl – KFZ-Warte");
   const font = await pdf.embedFont(StandardFonts.Helvetica);
+  let logo: PDFImage | null = null;
+  try {
+    logo = await pdf.embedPng(await readFile(path.join(process.cwd(), "public/brand/drk-goehl-logo-original.png")));
+  } catch {
+    logo = null; // Bericht funktioniert auch ohne Logodatei
+  }
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const W = 841.89;
   const H = 595.28; // A4 quer
@@ -258,7 +266,7 @@ export async function toPdf(r: Report, actor: Actor) {
   const usable = W - 2 * M;
 
   // Spaltenbreiten anhand der Inhaltslänge (gedeckelt)
-  const lens = r.columns.map((c, i) => Math.min(40, Math.max(c.length, ...r.rows.slice(0, 200).map((row) => String(row[i] ?? "").length), 4)));
+  const lens = r.columns.map((c, i) => Math.min(40, Math.max(c.length, ...r.rows.slice(0, 200).map((row) => String(row[i] ?? "").length), 4)) + 3);
   const total = lens.reduce((a, b) => a + b, 0);
   const widths = lens.map((l) => (l / total) * usable);
 
@@ -266,10 +274,17 @@ export async function toPdf(r: Report, actor: Actor) {
   let y = H - M;
   let pageNo = 1;
   const header = () => {
-    page.drawRectangle({ x: 0, y: H - 6, width: W, height: 6, color: rgb(0.9, 0, 0.02) });
-    page.drawText(clean(settings.organizationName), { x: M, y: y - 8, size: 9, font: bold, color: rgb(0.9, 0, 0.02) });
-    page.drawText(clean(`Erstellt am ${fmtDateTime(new Date())} von ${actor.firstName} ${actor.lastName} · Seite ${pageNo}`), { x: W - M - 300, y: y - 8, size: 7, font, color: rgb(0.4, 0.4, 0.4) });
-    y -= 24;
+    page.drawRectangle({ x: 0, y: H - 6, width: W, height: 6, color: rgb(0.89, 0, 0.04) });
+    if (logo) {
+      const lh = 32;
+      page.drawImage(logo, { x: M, y: y - lh, width: (logo.width / logo.height) * lh, height: lh });
+      page.drawText(clean(`${settings.organizationName} · Erstellt am ${fmtDateTime(new Date())} von ${actor.firstName} ${actor.lastName} · Seite ${pageNo}`), { x: W - M - 330, y: y - 20, size: 7, font, color: rgb(0.4, 0.4, 0.4) });
+      y -= lh + 18;
+    } else {
+      page.drawText(clean(settings.organizationName), { x: M, y: y - 8, size: 9, font: bold, color: rgb(0.89, 0, 0.04) });
+      page.drawText(clean(`Erstellt am ${fmtDateTime(new Date())} von ${actor.firstName} ${actor.lastName} · Seite ${pageNo}`), { x: W - M - 300, y: y - 8, size: 7, font, color: rgb(0.4, 0.4, 0.4) });
+      y -= 24;
+    }
     page.drawText(clean(r.title), { x: M, y, size: 13, font: bold });
     y -= 14;
     if (r.subtitle) {

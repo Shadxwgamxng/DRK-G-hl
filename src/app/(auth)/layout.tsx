@@ -1,17 +1,13 @@
 import Link from "next/link";
+import { DrkLogo } from "@/components/brand";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col bg-gray-100">
-      <header className="bg-anthracite-900" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-4">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-drk-500 text-sm font-black text-white" aria-hidden>
-            KW
-          </span>
-          <div className="leading-tight">
-            <p className="font-bold text-white">KFZ-Warte</p>
-            <p className="text-xs text-gray-400">DRK Göhl · Fahrzeug-, Material- und Mängelverwaltung</p>
-          </div>
+      <header className="border-b-4 border-drk-500 bg-white" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="mx-auto max-w-lg px-4 py-5">
+          <DrkLogo className="max-w-[340px]" priority />
+          <p className="mt-3 text-sm font-semibold text-anthracite-800">KFZ-Warte · Fahrzeug-, Material- und Mängelverwaltung</p>
         </div>
       </header>
       <main className="mx-auto w-full max-w-lg flex-1 px-4 py-8">{children}</main>

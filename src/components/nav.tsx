@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { clearDrafts, listDrafts } from "@/lib/offline-store";
 import { logoutAction } from "@/app/actions/auth";
+import { DrkLogo } from "./brand";
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; badge?: number; section?: "main" | "admin" };
 
@@ -102,14 +103,9 @@ export function Sidebar({ items, footer }: { items: NavItem[]; footer: ReactNode
 
 export function Brand() {
   return (
-    <Link href="/" className="flex items-center gap-3 px-5 py-5">
-      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-drk-500 text-sm font-black text-white" aria-hidden>
-        KW
-      </span>
-      <span className="leading-tight">
-        <span className="block text-base font-bold text-white">KFZ-Warte</span>
-        <span className="block text-xs text-gray-400">DRK Göhl</span>
-      </span>
+    <Link href="/" className="block px-5 py-5" aria-label="KFZ-Warte – zur Übersicht">
+      <DrkLogo variant="light" className="max-w-[210px]" priority />
+      <span className="mt-3 block border-t border-anthracite-700 pt-2 text-sm font-bold tracking-wide text-white">KFZ-Warte</span>
     </Link>
   );
 }

@@ -3,7 +3,7 @@ import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/pwa";
 
 export const metadata: Metadata = {
-  title: { default: "KFZ-Warte – DRK Göhl", template: "%s · KFZ-Warte DRK Göhl" },
+  title: { default: "KFZ-Warte – DRK Ortsverein Göhl e.V.", template: "%s · KFZ-Warte DRK Göhl" },
   description: "Fahrzeug-, Material- und Mängelverwaltung der KFZ-Warte",
   manifest: "/manifest.webmanifest",
   applicationName: "KFZ-Warte",
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#e60005",
+  themeColor: "#e3000b",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

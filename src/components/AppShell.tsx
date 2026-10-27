@@ -9,6 +9,7 @@ import { ACTIVE_REFILL_STATUSES, OPEN_DEFECT_STATUSES } from "@/lib/labels";
 import { unreadNotificationCount } from "@/server/services/admin";
 import { BottomNav, LogoutButton, Sidebar, type NavItem } from "./nav";
 import { SyncIndicator } from "./pwa";
+import { RedCross } from "./brand";
 import { SyncRunner } from "./sync";
 
 export async function AppShell({ actor, children }: { actor: Actor; children: React.ReactNode }) {
@@ -66,8 +67,8 @@ export async function AppShell({ actor, children }: { actor: Actor; children: Re
         )}
         <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top)" }}>
           <div className="flex items-center gap-2 px-4 py-2 sm:px-6">
-            <Link href="/" className="mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-drk-500 text-xs font-black text-white lg:hidden" aria-label="Zur Übersicht">
-              KW
+            <Link href="/" className="mr-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white lg:hidden" aria-label="Zur Übersicht">
+              <RedCross className="h-6 w-6" />
             </Link>
             <form action="/suche" className="relative min-w-0 flex-1" role="search">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" aria-hidden />

@@ -5,7 +5,8 @@ export const metadata = { title: "Offline" };
 export default function OfflinePage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center p-6 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-drk-500 text-lg font-black text-white">KW</div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/drk-goehl-logo.png" alt="Deutsches Rotes Kreuz – Ortsverein Göhl e.V. Bereitschaft" className="mb-6 w-72" />
       <h1 className="text-xl font-bold">Keine Verbindung</h1>
       <p className="mt-2 text-sm text-gray-600">
         Diese Seite wurde auf dem Gerät nicht zwischengespeichert. Bereits geöffnete Fahrzeugseiten, Kontroll-Checklisten und die Mängelmeldung sind offline verfügbar. Offline erfasste Vorgänge werden automatisch synchronisiert.

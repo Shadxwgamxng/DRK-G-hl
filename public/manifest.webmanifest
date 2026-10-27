@@ -1,5 +1,5 @@
 {
-  "name": "KFZ-Warte – DRK Göhl",
+  "name": "KFZ-Warte – DRK Ortsverein Göhl e.V.",
   "short_name": "KFZ-Warte",
   "description": "Fahrzeug-, Material- und Mängelverwaltung der KFZ-Warte",
   "lang": "de",
@@ -7,8 +7,8 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#1d2023",
-  "theme_color": "#e60005",
+  "background_color": "#ffffff",
+  "theme_color": "#e3000b",
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
