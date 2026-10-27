@@ -55,7 +55,7 @@ export default async function WarehousePage({ searchParams }: { searchParams: Pr
         ) : (
           <TableWrap>
             <table className="table-base">
-              <thead><tr><th>Material</th><th>Lagerort</th><th className="text-right">Bestand</th><th>Mindest</th><th>Chargen / Verfall</th></tr></thead>
+              <thead><tr><th>Material</th><th>Lagerort</th><th className="text-right">Bestand</th><th>Mindest</th><th>Verfallsdaten</th></tr></thead>
               <tbody>
                 {stocks.map((s) => (
                   <tr key={s.id} className={s.belowMin ? "bg-amber-50" : undefined}>
@@ -92,12 +92,12 @@ export default async function WarehousePage({ searchParams }: { searchParams: Pr
               <p className="text-sm text-gray-600">Zuerst <Link className="underline" href="/material">Material</Link> und <Link className="underline" href="/lager/orte">Lagerorte</Link> anlegen.</p>
             ) : (
               <ActionForm action={receiveStockAction} resetOnSuccess>
-                <SelectInput label="Material" name="materialId" required placeholder="Bitte wählen" options={materials.map((m) => ({ value: m.id, label: `${m.name}${m.batchTracked ? " (Charge)" : ""}` }))} />
+                <SelectInput label="Material" name="materialId" required placeholder="Bitte wählen" options={materials.map((m) => ({ value: m.id, label: `${m.name}${m.batchTracked ? " (mit Verfallsdatum)" : ""}` }))} />
                 <SelectInput label="Lagerort" name="locationId" required placeholder="Bitte wählen" options={locations.map((l) => ({ value: l.id, label: `${l.warehouse.name} – ${l.name}` }))} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <TextInput label="Menge" name="quantity" type="number" min={1} required inputMode="numeric" />
                   <TextInput label="Mindestbestand (optional)" name="minQuantity" type="number" min={0} inputMode="numeric" />
-                  <TextInput label="Chargennummer" name="batchNumber" />
+                  <TextInput label="Chargennummer (optional, bei BtM Pflicht)" name="batchNumber" />
                   <TextInput label="Verfallsdatum" name="expiryDate" type="date" hint="Pflicht bei chargengeführtem Material" />
                 </div>
                 <TextInput label="Bemerkung (z. B. Lieferschein)" name="note" />
@@ -115,7 +115,7 @@ export default async function WarehousePage({ searchParams }: { searchParams: Pr
                   placeholder="Bitte wählen"
                   options={stocks.map((s) => ({ value: s.id, label: `${s.material.name} · ${s.location.name} (${s.quantity})` }))}
                 />
-                <SelectInput label="Charge (bei chargengeführtem Material)" name="batchId" placeholder="–" options={stocks.flatMap((s) => s.batches.map((b) => ({ value: b.id, label: `${s.material.name} · ${s.location.name} · ${b.batchNumber ?? "o. Nr."} · ${fmtDate(b.expiryDate)} (${b.quantity})` })))} />
+                <SelectInput label="Verfallsdatum (bei Material mit Verfallsdatum)" name="batchId" placeholder="–" options={stocks.flatMap((s) => s.batches.map((b) => ({ value: b.id, label: `${s.material.name} · ${s.location.name} · ${b.batchNumber ?? "o. Nr."} · ${fmtDate(b.expiryDate)} (${b.quantity})` })))} />
                 <SelectInput label="Vorgang" name="mode" required options={[{ value: "ISSUE", label: "Entnahme" }, { value: "WRITE_OFF", label: "Austragen (abgelaufen, beschädigt …)" }, { value: "CORRECTION", label: "Inventurkorrektur" }]} />
                 <SelectInput label="Grund" name="reason" placeholder="–" options={Object.entries(MOVEMENT_REASON).map(([value, label]) => ({ value, label }))} />
                 <div className="grid gap-4 sm:grid-cols-2">

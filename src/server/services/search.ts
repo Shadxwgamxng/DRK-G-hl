@@ -2,6 +2,8 @@ import { db } from "../db";
 import type { Actor } from "../actor";
 import { can } from "../actor";
 import { vehicleWhere, viaVehicle } from "../access";
+import { materialVisibility } from "../material-visibility";
+import { getSettings } from "../settings";
 
 export type SearchHit = { type: string; title: string; subtitle?: string; href: string };
 
@@ -27,8 +29,9 @@ export async function globalSearch(actor: Actor, q: string): Promise<SearchHit[]
   hits.push(...defects.map((d) => ({ type: "Mangel", title: d.title, subtitle: d.vehicle.name, href: `/maengel/${d.id}` })));
 
   if (can(actor, "materials.view")) {
+    const visible = materialVisibility(actor, (await getSettings()).medicationsEnabled);
     const stocks = await db.vehicleMaterialStock.findMany({
-      where: { active: true, ...viaVehicle(actor), material: { OR: [{ name: contains }, { articleNumber: contains }] } },
+      where: { active: true, ...viaVehicle(actor), material: { AND: [visible, { OR: [{ name: contains }, { articleNumber: contains }] }] } },
       include: { material: true, vehicle: { select: { id: true, name: true } } },
       take: 15,
     });
@@ -41,14 +44,14 @@ export async function globalSearch(actor: Actor, q: string): Promise<SearchHit[]
       })),
     );
     const batches = await db.materialBatch.findMany({
-      where: { batchNumber: contains, quantity: { gt: 0 }, vehicleStock: { ...viaVehicle(actor) } },
+      where: { batchNumber: contains, quantity: { gt: 0 }, material: visible, vehicleStock: { ...viaVehicle(actor) } },
       include: { material: true, vehicleStock: { include: { vehicle: { select: { name: true } } } } },
       take: 10,
     });
     hits.push(
       ...batches.map((b) => ({
-        type: "Charge",
-        title: `${b.material.name} – Charge ${b.batchNumber}`,
+        type: "Chargennr.",
+        title: `${b.material.name} – Ch. ${b.batchNumber}`,
         subtitle: b.vehicleStock?.vehicle.name,
         href: `/fahrzeuge/${b.vehicleStock?.vehicleId}/material/${b.vehicleStockId}`,
       })),

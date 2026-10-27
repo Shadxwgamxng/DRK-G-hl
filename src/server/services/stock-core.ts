@@ -3,7 +3,7 @@ import { ACTIVE_REFILL_STATUSES } from "@/lib/labels";
 import type { Tx } from "../db";
 import type { Actor } from "../actor";
 import { audit } from "../audit";
-import { conflict, notFound } from "../errors";
+import { conflict, invalid, notFound } from "../errors";
 import { notify, recipientsFor } from "../notifications";
 
 /**
@@ -19,7 +19,7 @@ export async function lockVehicleStock(tx: Tx, id: string) {
   if (rows.length === 0) throw notFound("Materialposition nicht gefunden.");
   return tx.vehicleMaterialStock.findUniqueOrThrow({
     where: { id },
-    include: { material: true, vehicle: true, refillLocation: { include: { warehouse: true } } },
+    include: { material: { include: { category: true } }, vehicle: true, refillLocation: { include: { warehouse: true } } },
   });
 }
 
@@ -62,7 +62,7 @@ export function createMovement(tx: Tx, actor: Actor, m: MovementData) {
 export async function changeBatch(tx: Tx, batchId: string, delta: number) {
   if (delta < 0) {
     const res = await tx.materialBatch.updateMany({ where: { id: batchId, quantity: { gte: -delta } }, data: { quantity: { increment: delta } } });
-    if (res.count !== 1) throw conflict("Die Charge enthält nicht mehr genügend Menge. Bitte Ansicht aktualisieren.");
+    if (res.count !== 1) throw conflict("Mit diesem Verfallsdatum ist nicht mehr genügend Menge vorhanden. Bitte Ansicht aktualisieren.");
   } else {
     await tx.materialBatch.update({ where: { id: batchId }, data: { quantity: { increment: delta } } });
   }
@@ -86,7 +86,8 @@ export async function changeWarehouseQuantity(tx: Tx, stockId: string, delta: nu
   }
 }
 
-/** Charge in einem Bestand finden oder anlegen (gleiche Chargennummer + gleiches Verfallsdatum). */
+/** Charge in einem Bestand finden oder anlegen (gleiche Chargennummer + gleiches Verfallsdatum).
+ *  Die Chargennummer ist optional – außer bei Betäubungsmitteln (BtM-Nachweis). */
 export async function findOrCreateBatch(
   tx: Tx,
   holder: { vehicleStockId?: string; warehouseStockId?: string },
@@ -94,6 +95,10 @@ export async function findOrCreateBatch(
   batchNumber: string | null | undefined,
   expiryDate: Date | null | undefined,
 ) {
+  batchNumber = batchNumber?.trim() || null;
+  const material = await tx.material.findUniqueOrThrow({ where: { id: materialId }, select: { name: true, isNarcotic: true } });
+  if (material.isNarcotic && !batchNumber)
+    throw invalid(`Bei Betäubungsmitteln ist die Chargennummer Pflicht (${material.name}).`, { batchNumber: "Pflicht bei BtM" });
   const where: Prisma.MaterialBatchWhereInput = {
     materialId,
     vehicleStockId: holder.vehicleStockId ?? null,

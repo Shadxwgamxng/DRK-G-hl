@@ -105,10 +105,10 @@ export async function provideRefill(actor: Actor, id: string, input: unknown) {
       if (ws.materialId !== r.materialId) throw invalid("Lagerplatz enthält ein anderes Material.");
       let batch = null;
       if (r.material.batchTracked) {
-        if (!item.batchId) throw invalid("Bitte die Charge wählen.", { batchId: "Charge erforderlich" });
+        if (!item.batchId) throw invalid("Bitte das Verfallsdatum wählen.", { batchId: "Verfallsdatum erforderlich" });
         batch = await tx.materialBatch.findFirst({ where: { id: item.batchId, warehouseStockId: ws.id } });
-        if (!batch) throw invalid("Charge gehört nicht zu diesem Lagerplatz.");
-        if (batch.quantity < item.quantity) throw invalid(`Charge ${batch.batchNumber ?? ""} enthält nur ${batch.quantity}.`);
+        if (!batch) throw invalid("Diese Stücke gehören nicht zu diesem Lagerplatz.");
+        if (batch.quantity < item.quantity) throw invalid(`Mit diesem Verfallsdatum sind nur ${batch.quantity} vorhanden.`);
         await changeBatch(tx, batch.id, -item.quantity);
       }
       if (ws.quantity < item.quantity) throw invalid(`Am Lagerplatz ${ws.location.name} sind nur ${ws.quantity} vorhanden.`);
@@ -199,7 +199,7 @@ export async function confirmRefill(actor: Actor, id: string, input: unknown) {
       if (batches.length === 0 || sum !== d.quantity)
         throw invalid("Bitte Chargennummer, Verfallsdatum und Menge der eingeräumten Chargen angeben (Summe = Nachfüllmenge).", { batches: "Chargenangaben unvollständig" });
       for (const b of batches) {
-        if (!b.expiryDate) throw invalid("Verfallsdatum je Charge angeben.", { batches: "Verfallsdatum fehlt" });
+        if (!b.expiryDate) throw invalid("Bitte das Verfallsdatum angeben.", { batches: "Verfallsdatum fehlt" });
         await bookIntoVehicle(tx, actor, stock, r.id, b.quantity, b.batchNumber ?? null, b.expiryDate, d.note ?? "Nachfüllung ohne Lagerbereitstellung");
       }
     } else {

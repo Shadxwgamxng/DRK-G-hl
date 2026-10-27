@@ -4,13 +4,13 @@ import { requireActiveActor } from "@/server/auth/current";
 import { can } from "@/server/actor";
 import { getCheck, type CheckAmendment } from "@/server/services/checks";
 import { notFoundOnError } from "@/server/page-helpers";
-import { Alert, Badge, Card, DefinitionList } from "@/components/ui";
+import { Alert, Badge, Card, DefinitionList, TableWrap } from "@/components/ui";
 import { AttachmentGallery } from "@/components/Uploader";
 import { ActionForm, SubmitButton, TextArea } from "@/components/forms";
 import { DefectStatusBadge } from "@/components/status";
 import { amendCheckAction } from "@/app/actions/vehicles";
 import { fmtDateTime, fmtNumber } from "@/lib/format";
-import { CHECK_OUTCOME, CHECK_RESULT, CHECK_TYPE } from "@/lib/labels";
+import { CHECK_MATERIAL_STATUS, CHECK_OUTCOME, CHECK_RESULT, CHECK_TYPE } from "@/lib/labels";
 
 export default async function CheckDetail({ params, searchParams }: { params: Promise<{ id: string; checkId: string }>; searchParams: Promise<Record<string, string>> }) {
   const actor = await requireActiveActor();
@@ -49,6 +49,34 @@ export default async function CheckDetail({ params, searchParams }: { params: Pr
           ))}
         </ul>
       </Card>
+      {c.materialResults.length > 0 && (
+        <Card
+          title="Materialprüfung"
+          padded={false}
+          actions={<span className="text-sm text-gray-600">{c.materialResults.filter((m) => m.status !== "OK").length} Abweichung(en) von {c.materialResults.length}</span>}
+        >
+          <TableWrap>
+            <table className="table-base">
+              <thead>
+                <tr><th>Fach</th><th>Material</th><th className="text-right">Soll</th><th className="text-right">Gebucht vorher</th><th className="text-right">Festgestellt</th><th>Ergebnis</th><th>Bemerkung</th></tr>
+              </thead>
+              <tbody>
+                {c.materialResults.map((m) => (
+                  <tr key={m.id}>
+                    <td>{m.compartment ?? "–"}</td>
+                    <td className="font-medium">{m.materialName}{m.isNarcotic && <Badge tone="red" className="ml-2">BtM</Badge>}</td>
+                    <td className="text-right">{m.targetQuantity} {m.unit}</td>
+                    <td className="text-right">{m.previousQuantity}</td>
+                    <td className="text-right font-semibold">{m.countedQuantity}{m.expiredRemoved > 0 && <span className="block text-xs font-normal text-drk-700">{m.expiredRemoved} abgelaufen entnommen</span>}</td>
+                    <td><Badge tone={m.status === "OK" ? "green" : m.status === "DEVIATION" ? "yellow" : "red"}>{CHECK_MATERIAL_STATUS[m.status]}</Badge></td>
+                    <td className="text-sm">{m.note ?? ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableWrap>
+        </Card>
+      )}
       {c.defects.length > 0 && (
         <Card title="Aus dieser Kontrolle gemeldete Mängel">
           <ul className="space-y-2">

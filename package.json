@@ -16,7 +16,8 @@
     "db:fahrzeuge": "tsx prisma/fahrzeuge-goehl.ts",
     "reminders": "tsx scripts/run-reminders.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:materialkatalog": "tsx prisma/materialkatalog.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -1,5 +1,6 @@
 import { Package } from "lucide-react";
 import { requireActiveActor } from "@/server/auth/current";
+import { can } from "@/server/actor";
 import { listCategories, listMaterials } from "@/server/services/materials";
 import { getSettings } from "@/server/settings";
 import { Alert, Badge, Card, EmptyState, PageHeader } from "@/components/ui";
@@ -10,9 +11,9 @@ import { upsertMaterialAction } from "@/app/actions/materials";
 export const metadata = { title: "Materialkatalog" };
 
 type Cat = { id: string; name: string };
-type M = { id: string; name: string; articleNumber: string | null; categoryId: string; description: string | null; unit: string; manufacturer: string | null; batchTracked: boolean; remarks: string | null; archived: boolean };
+type M = { id: string; name: string; articleNumber: string | null; categoryId: string; description: string | null; unit: string; manufacturer: string | null; batchTracked: boolean; isEquipment: boolean; isNarcotic: boolean; remarks: string | null; archived: boolean };
 
-function MaterialFields({ categories, m }: { categories: Cat[]; m?: M }) {
+function MaterialFields({ categories, m, btm }: { categories: Cat[]; m?: M; btm: boolean }) {
   return (
     <>
       <div className="grid gap-4 md:grid-cols-3">
@@ -24,7 +25,11 @@ function MaterialFields({ categories, m }: { categories: Cat[]; m?: M }) {
       </div>
       <TextArea label="Beschreibung" name="description" defaultValue={m?.description ?? ""} rows={2} />
       <TextArea label="Bemerkungen" name="remarks" defaultValue={m?.remarks ?? ""} rows={2} />
-      <Checkbox name="batchTracked" label="Chargenführung mit Verfallsdatum" hint="Bestand wird je Charge geführt; beim Austragen muss die Charge gewählt werden." defaultChecked={m?.batchTracked} />
+      <div className="grid gap-2 md:grid-cols-3">
+        <Checkbox name="batchTracked" label="Mit Verfallsdatum" hint="Bestand wird je Verfallsdatum geführt. Chargennummer optional (bei BtM Pflicht)." defaultChecked={m?.batchTracked} />
+        <Checkbox name="isEquipment" label="Gerät / Ausstattung" hint="Bei der Kontrolle: „vorhanden & funktioniert“ oder „defekt“ (wird als Mangel gemeldet)." defaultChecked={m?.isEquipment} />
+        {btm && <Checkbox name="isNarcotic" label="Betäubungsmittel (BtM)" hint="Nur für Personen mit BtM-Recht sichtbar; Chargennummer ist Pflicht." defaultChecked={m?.isNarcotic} />}
+      </div>
       <Uploader name="imageId" label="Produktbild (optional)" allowPdf={false} single />
     </>
   );
@@ -33,6 +38,7 @@ function MaterialFields({ categories, m }: { categories: Cat[]; m?: M }) {
 export default async function MaterialCatalogPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const actor = await requireActiveActor("materials.catalog");
   const sp = await searchParams;
+  const btm = can(actor, "materials.btm");
   const [materials, categories, settings] = await Promise.all([listMaterials(actor, { q: sp.q, categoryId: sp.categoryId, includeArchived: sp.archiv === "1" }), listCategories(), getSettings()]);
   return (
     <>
@@ -48,7 +54,7 @@ export default async function MaterialCatalogPage({ searchParams }: { searchPara
       </form>
       <Card title="Neues Material" className="mb-5">
         <ActionForm action={upsertMaterialAction.bind(null, null)} resetOnSuccess>
-          <MaterialFields categories={categories} />
+          <MaterialFields categories={categories} btm={btm} />
           <SubmitButton>Material anlegen</SubmitButton>
         </ActionForm>
       </Card>
@@ -68,13 +74,15 @@ export default async function MaterialCatalogPage({ searchParams }: { searchPara
                     <span className="font-semibold">{m.name}</span>
                     {m.articleNumber && <span className="text-xs text-gray-500">Art.-Nr. {m.articleNumber}</span>}
                     <Badge>{m.category.name}</Badge>
-                    {m.batchTracked && <Badge tone="blue">Charge</Badge>}
+                    {m.batchTracked && <Badge tone="blue">Verfallsdatum</Badge>}
+                    {m.isEquipment && <Badge>Gerät</Badge>}
+                    {m.isNarcotic && <Badge tone="red">BtM</Badge>}
                     {m.archived && <Badge tone="dark">archiviert</Badge>}
                     <span className="text-xs text-gray-500">in {m._count.vehicleStocks} Fahrzeug(en), {m._count.warehouseStocks} Lagerplatz/-plätzen</span>
                   </summary>
                   <div className="mt-3">
                     <ActionForm action={upsertMaterialAction.bind(null, m.id)}>
-                      <MaterialFields categories={categories} m={m} />
+                      <MaterialFields categories={categories} m={m} btm={btm} />
                       <Checkbox name="archived" label="Archiviert (nicht mehr neu verwendbar)" defaultChecked={m.archived} />
                       <SubmitButton variant="secondary">Speichern</SubmitButton>
                     </ActionForm>

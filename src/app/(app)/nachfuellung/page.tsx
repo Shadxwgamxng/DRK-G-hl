@@ -72,7 +72,7 @@ export default async function RefillPage({ searchParams }: { searchParams: Promi
                       </p>
                       <p className="text-sm text-gray-600">
                         <Link href={`/fahrzeuge/${r.vehicleId}/material/${r.vehicleStockId}`} className="font-semibold hover:text-drkblue-600">{r.vehicle.name}</Link> · Soll {s.targetQuantity} / Ist {s.currentQuantity}
-                        {r.material.batchTracked && <Badge className="ml-2">chargengeführt</Badge>}
+                        {r.material.batchTracked && <Badge className="ml-2">mit Verfallsdatum</Badge>}
                       </p>
                       <p className="mt-1 text-sm">Grund: {r.reason}</p>
                       <p className="text-xs text-gray-500">Gemeldet {fmtDateTime(r.createdAt)} von {r.reportedBy.firstName} {r.reportedBy.lastName}</p>
@@ -105,7 +105,7 @@ export default async function RefillPage({ searchParams }: { searchParams: Promi
                   {r.movements.length > 0 && (
                     <ul className="mt-3 space-y-0.5 text-xs text-gray-600">
                       {r.movements.map((m) => (
-                        <li key={m.id}>{fmtDateTime(m.createdAt)} · {MOVEMENT_TYPE[m.type]} {Math.abs(m.quantity)} {m.batchNumber ? `(Charge ${m.batchNumber})` : ""}</li>
+                        <li key={m.id}>{fmtDateTime(m.createdAt)} · {MOVEMENT_TYPE[m.type]} {Math.abs(m.quantity)} {m.batchNumber ? `(Ch. ${m.batchNumber})` : ""}</li>
                       ))}
                     </ul>
                   )}
@@ -127,7 +127,7 @@ export default async function RefillPage({ searchParams }: { searchParams: Promi
                         {r.warehouseStocks.flatMap((w) =>
                           r.material.batchTracked
                             ? w.batches.map((b) => (
-                                <TextInput key={b.id} name={`qty_${w.id}__${b.id}`} type="number" min={0} max={b.quantity} inputMode="numeric" label={`${w.location.name} · Charge ${b.batchNumber ?? "o. Nr."} · Verfall ${fmtDate(b.expiryDate)} (verfügbar ${b.quantity})`} />
+                                <TextInput key={b.id} name={`qty_${w.id}__${b.id}`} type="number" min={0} max={b.quantity} inputMode="numeric" label={`${w.location.name} · Verfall ${fmtDate(b.expiryDate)}${b.batchNumber ? ` · Ch. ${b.batchNumber}` : ""} (verfügbar ${b.quantity})`} />
                               ))
                             : [<TextInput key={w.id} name={`qty_${w.id}`} type="number" min={0} max={w.quantity} inputMode="numeric" label={`${w.location.warehouse.name} – ${w.location.name} (verfügbar ${w.quantity})`} defaultValue={Math.min(w.quantity, r.requestedQuantity)} />],
                         )}
@@ -144,7 +144,7 @@ export default async function RefillPage({ searchParams }: { searchParams: Promi
                         <TextInput label={`Tatsächlich eingeräumte Menge (${r.material.unit})`} name="quantity" type="number" inputMode="numeric" min={1} required defaultValue={r.providedQuantity ?? r.requestedQuantity} hint={r.status === "PROVIDED" ? "Nicht benötigte Restmengen werden automatisch ins Lager zurückgebucht." : "Erst mit dieser Bestätigung wird der Fahrzeugbestand erhöht."} />
                         {r.material.batchTracked && r.status !== "PROVIDED" && (
                           <div className="grid gap-4 sm:grid-cols-2">
-                            <TextInput label="Chargennummer" name="batchNumber" />
+                            <TextInput label={r.material.isNarcotic ? "Chargennummer (Pflicht bei BtM)" : "Chargennummer (optional)"} name="batchNumber" />
                             <TextInput label="Verfallsdatum *" name="batchExpiry" type="date" />
                           </div>
                         )}

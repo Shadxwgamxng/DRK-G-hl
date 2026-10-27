@@ -2,7 +2,7 @@ import type { CheckType, Prisma } from "@prisma/client";
 import { z, optDate, optInt, optText, reqText, optId } from "@/lib/validation";
 import { db } from "../db";
 import type { Actor } from "../actor";
-import { requirePermission } from "../actor";
+import { can, requirePermission } from "../actor";
 import { assertVehicleAccess, viaVehicle } from "../access";
 import { audit } from "../audit";
 import { conflict, invalid, notFound } from "../errors";
@@ -10,6 +10,7 @@ import { notify, recipientsFor } from "../notifications";
 import { parse } from "../validate";
 import { linkAttachments } from "./attachments";
 import { createDefectTx, DEFECT_CATEGORIES, DEFECT_SEVERITIES, OFFLINE_THRESHOLD_MS } from "./defects";
+import { applyMaterialResults, materialResultSchema, validateMaterialResults } from "./check-materials";
 
 export const CHECK_TYPES = ["ROUTINE", "SHIFT_START", "AFTER_MISSION", "EXTENDED", "OTHER"] as const;
 
@@ -42,6 +43,9 @@ const checkSchema = z.object({
   mileage: optInt(0, 5_000_000),
   remarks: optText(5000),
   results: z.array(resultSchema).min(1),
+  // Materialprüfung (Beladung Fach für Fach)
+  materials: z.array(materialResultSchema).max(2000).default([]),
+  materialsLoadedAt: optDate(),
   // Offline-Erfassung
   clientRef: z.preprocess((v) => (v === "" ? undefined : v), z.string().uuid().optional()),
   performedAt: optDate(),
@@ -82,9 +86,11 @@ export async function performCheck(actor: Actor, vehicleId: string, input: unkno
       throw invalid("Bei festgestellten Mängeln bitte eine Bemerkung angeben oder einen Mangel anlegen.", { [`note_${r.itemId}`]: "Bemerkung erforderlich" });
   }
 
+  await validateMaterialResults(actor, vehicleId, d.materials, d.materialsLoadedAt);
+
   const now = new Date();
   const performedAt = d.performedAt && d.performedAt < now && d.clientRef ? d.performedAt : now;
-  const outcome = d.results.some((r) => r.result === "DEFECT") ? "DEFECTS" : "OK";
+  const outcome = d.results.some((r) => r.result === "DEFECT") || d.materials.some((m) => m.status === "DEFECT") ? "DEFECTS" : "OK";
 
   return db.$transaction(async (tx) => {
     const check = await tx.vehicleCheck.create({
@@ -132,16 +138,20 @@ export async function performCheck(actor: Actor, vehicleId: string, input: unkno
       defectIds.push(defect.id);
     }
 
+    const mat = await applyMaterialResults(tx, actor, { vehicleId, checkId: check.id, performedAt, mileage: d.mileage }, d.materials);
+    defectIds.push(...mat.defectIds);
+
     if (d.mileage && (!vehicle.mileage || d.mileage > vehicle.mileage)) {
       await tx.vehicle.update({ where: { id: vehicleId }, data: { mileage: d.mileage } });
     }
-    await audit(actor, { action: "check.complete", entityType: "VehicleCheck", entityId: check.id, vehicleId, newValues: { outcome, checkType: d.checkType, items: d.results.length, defects: defectIds.length } }, tx);
+    await audit(actor, { action: "check.complete", entityType: "VehicleCheck", entityId: check.id, vehicleId, newValues: { outcome, checkType: d.checkType, items: d.results.length, materials: d.materials.length, materialDeviations: mat.deviations, defects: defectIds.length } }, tx);
     if (outcome === "DEFECTS") {
       const r = await recipientsFor({ permission: "defects.manage", vehicleId, excludeUserId: actor.id }, tx);
-      await notify(r, { type: "check_defects", title: `Kontrolle mit Befund: ${vehicle.name}`, body: `${d.results.filter((x) => x.result === "DEFECT").length} Prüfpunkt(e) mit Mangel`, link: `/fahrzeuge/${vehicleId}/kontrollen/${check.id}`, dedupeKey: `check:${check.id}` }, tx);
+      await notify(r, { type: "check_defects", title: `Kontrolle mit Befund: ${vehicle.name}`, body: `${d.results.filter((x) => x.result === "DEFECT").length + d.materials.filter((m) => m.status === "DEFECT").length} Prüfpunkt(e) mit Mangel`, link: `/fahrzeuge/${vehicleId}/kontrollen/${check.id}`, dedupeKey: `check:${check.id}` }, tx);
     }
     return { check, duplicate: false, defectIds };
-  });
+    // große Beladungen: viele Buchungen in einer Transaktion
+  }, { timeout: 60_000, maxWait: 10_000 });
 }
 
 export async function listChecks(actor: Actor, filter: { vehicleId?: string; from?: Date; to?: Date } = {}, take = 100) {
@@ -167,6 +177,7 @@ export async function getCheck(actor: Actor, id: string) {
       vehicle: true,
       performedBy: { select: { firstName: true, lastName: true } },
       results: { orderBy: { sortOrder: "asc" } },
+      materialResults: { where: can(actor, "materials.btm") ? {} : { isNarcotic: false }, orderBy: [{ compartment: "asc" }, { sortOrder: "asc" }] },
       attachments: { orderBy: { createdAt: "asc" } },
       defects: { select: { id: true, title: true, status: true, severity: true, checkItemLabel: true } },
     },

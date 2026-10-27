@@ -36,6 +36,7 @@ Das Skript fragt nach:
 2. **E-Mail für das Zertifikat** (nur bei Domain; Ablaufwarnungen von Let's Encrypt)
 3. **E-Mail und Benutzername des Administrators**
 4. ob der **Fahrzeugbestand des OV Göhl** (11 Fahrzeuge) gleich importiert werden soll (empfohlen: `J`)
+5. ob der **Standard-Materialkatalog** (293 Artikel, ohne Mengen) importiert werden soll (empfohlen: `J`)
 
 Danach macht es automatisch:
 - installiert Docker (falls nicht vorhanden)
@@ -104,6 +105,7 @@ Dann `cd /opt/drk-kfz-warte/deploy && docker compose up -d` und in der App unter
 | Wiederherstellen | `./restore.sh backups/db_DATUM.dump backups/uploads_DATUM.tar.gz` |
 | Erinnerungen manuell | `docker compose exec app npx tsx scripts/run-reminders.ts` |
 | Passwort zurücksetzen (Notfall) | `docker compose exec app npx tsx scripts/reset-password.ts BENUTZERNAME` |
+| Materialkatalog importieren / ergänzen | `docker compose exec app npx tsx prisma/materialkatalog.ts` (legt nur Fehlendes an) |
 | Fahrzeugbestand erneut abgleichen | `docker compose exec app npx tsx prisma/fahrzeuge-goehl.ts` (legt nur Fehlendes an) |
 
 ### Backups

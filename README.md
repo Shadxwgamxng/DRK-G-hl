@@ -30,6 +30,7 @@ npm install
 npx prisma migrate deploy         # Schema + Integritätsregeln (Trigger, CHECKs, partielle Indizes)
 npm run db:seed                   # Rollen, Rechte, Stammdaten, Erst-Administrator
 npm run db:fahrzeuge              # Fahrzeugbestand DRK OV Göhl anlegen (mehrfach ausführbar, überschreibt nichts)
+npm run db:materialkatalog        # Standard-Materialkatalog (293 Artikel) anlegen (mehrfach ausführbar)
 npm run dev                       # http://localhost:3000
 ```
 
@@ -55,6 +56,15 @@ DATABASE_URL=…/drk_kfz_demo DEMO_MODE=true npm run db:demo
 `prisma/fleet-goehl.ts` enthält die 11 Fahrzeuge/Einsatzmittel des Ortsvereins (8 Fahrzeuge mit Funkrufnamen „Rotkreuz Ostholstein 42/…“, Feldkochherd, Verpflegungs- und Logistikanhänger). Kennzeichen, Klassifizierung und Hersteller stammen von bos-fahrzeuge.info (Stand 27.10.2026); die Detailseiten (Modell, Baujahr, Aufbau) sind dort durch eine Bot-Prüfung geschützt und wurden nicht übernommen.
 
 **Noch nachzutragen:** Kennzeichen/Hersteller RTW T1 (42/83-01, dort nicht gelistet), Kennzeichen Feldkochherd und beide Anhänger, für alle Modell, Baujahr, Erstzulassung, Kilometerstand. Auf bos-fahrzeuge.info sind ein „Betreuungs- und Verpflegungs-AnH“ (OH-RK 4001) und ein „Material-Anhänger“ (Böckmann, KI-AW 22) als außer Dienst geführt – ggf. identisch mit den aktuellen Anhängern.
+
+## Materialkatalog und Materialprüfung
+
+`prisma/material-catalog.ts` enthält 293 Katalogartikel in 14 Kategorien (Verband, Zugang, Atemweg, Diagnostik, Trauma, Hygiene, Geräte, Fahrzeug …) – **ohne Mengen**; Fach und Soll-Menge legt die KFZ-Warte je Fahrzeug fest. Jede Größe ist ein eigener Artikel (z. B. Venenverweilkanülen 14–24 G).
+
+- **Medikamente** abgeglichen mit den *Handlungsempfehlungen für den Rettungsdienst in Schleswig-Holstein*, Version 10.0 (15.07.2025), Medikamentenappendix. Sichtbar erst nach Freischalten der Medikamentenverwaltung (Einstellungen).
+- **Betäubungsmittel:** Kennzeichen „BtM“ am Material (Standard: Morphin, wie in den HE gekennzeichnet; weitere legt der Träger/ÄLRD fest). BtM sind nur mit dem Recht `materials.btm` sichtbar und buchbar, die Chargennummer ist Pflicht. Die App ergänzt das BtM-Buch nach BtMVV, ersetzt es aber nicht.
+- **Verfallsdatum statt Charge:** Bestand wird je Verfallsdatum geführt; die Chargennummer ist optional (außer BtM).
+- **Materialprüfung bei jeder Kontrolle:** Die gesamte Beladung wird Fach für Fach angezeigt (Soll, gebuchte Menge, Verfallsdaten). Je Position „Stimmt“, „Abweichung“ (tatsächliche Menge je Verfallsdatum, abgelaufene Stücke „entnommen“, weitere Stücke mit Verfallsdatum erfassen) oder bei Geräten „Defekt“. Abweichungen werden als Korrektur bzw. „abgelaufen“ gebucht, Fehlmengen kommen automatisch auf die Nachfüllliste, Defekte werden als Mangel gemeldet. Das Ergebnis ist Teil der revisionssicheren Kontrolle.
 
 ## Getroffene Standardentscheidungen
 

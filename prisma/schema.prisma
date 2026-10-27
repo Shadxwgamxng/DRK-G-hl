@@ -249,26 +249,27 @@ enum CheckOutcome {
 }
 
 model VehicleCheck {
-  id               String               @id @default(cuid())
+  id               String                       @id @default(cuid())
   vehicleId        String
-  vehicle          Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  vehicle          Vehicle                      @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
   checklistId      String?
-  checklist        Checklist?           @relation(fields: [checklistId], references: [id], onDelete: SetNull)
+  checklist        Checklist?                   @relation(fields: [checklistId], references: [id], onDelete: SetNull)
   checklistName    String // Momentaufnahme
-  checkType        CheckType            @default(ROUTINE)
+  checkType        CheckType                    @default(ROUTINE)
   performedById    String
-  performedBy      User                 @relation(fields: [performedById], references: [id])
+  performedBy      User                         @relation(fields: [performedById], references: [id])
   performedAt      DateTime
   mileage          Int?
   remarks          String?
   outcome          CheckOutcome
   // Revisionssicherheit: abgeschlossene Kontrollen sind unveränderlich, Ergänzungen nur als Nachtrag
-  completedAt      DateTime             @default(now())
-  amendments       Json                 @default("[]")
+  completedAt      DateTime                     @default(now())
+  amendments       Json                         @default("[]")
   // Offline-Synchronisation: Idempotenz-Schlüssel des Geräts
-  clientRef        String?              @unique
+  clientRef        String?                      @unique
   offlineCreatedAt DateTime?
   results          VehicleCheckResult[]
+  materialResults  VehicleCheckMaterialResult[]
   attachments      Attachment[]
   defects          Defect[]
 
@@ -293,6 +294,37 @@ model VehicleCheckResult {
   note            String?
 
   @@index([checkId])
+}
+
+enum CheckMaterialStatus {
+  OK // vollständig / vorhanden und funktionsfähig
+  DEVIATION // Menge weicht ab (gezählte Menge gebucht)
+  MISSING // Gerät fehlt
+  DEFECT // Gerät defekt
+}
+
+// Materialprüfung im Rahmen einer Kontrolle (Momentaufnahme, unveränderlich)
+model VehicleCheckMaterialResult {
+  id               String                @id @default(cuid())
+  checkId          String
+  check            VehicleCheck          @relation(fields: [checkId], references: [id], onDelete: Cascade)
+  vehicleStockId   String?
+  vehicleStock     VehicleMaterialStock? @relation(fields: [vehicleStockId], references: [id], onDelete: SetNull)
+  materialName     String
+  compartment      String?
+  unit             String
+  isEquipment      Boolean               @default(false)
+  isNarcotic       Boolean               @default(false)
+  targetQuantity   Int
+  previousQuantity Int // Buchbestand vor der Kontrolle
+  countedQuantity  Int // festgestellte Menge
+  expiredRemoved   Int                   @default(0) // davon abgelaufen entnommen
+  status           CheckMaterialStatus
+  note             String?
+  sortOrder        Int                   @default(0)
+
+  @@index([checkId])
+  @@index([vehicleStockId])
 }
 
 // ───────────────────────────── Prüfungen & Wartung ─────────────────────────────
@@ -387,6 +419,10 @@ model Material {
   manufacturer    String?
   // true = Bestand wird chargenweise mit Verfallsdaten geführt
   batchTracked    Boolean                @default(false)
+  // Gerät/Ausstattung: bei der Kontrolle „vorhanden / funktionsfähig“ statt Mengenprüfung
+  isEquipment     Boolean                @default(false)
+  // Betäubungsmittel: eigenes Recht, Chargennummer Pflicht
+  isNarcotic      Boolean                @default(false)
   remarks         String?
   archived        Boolean                @default(false)
   imageId         String?                @unique
@@ -404,27 +440,28 @@ model Material {
 }
 
 model VehicleMaterialStock {
-  id               String           @id @default(cuid())
+  id               String                       @id @default(cuid())
   vehicleId        String
-  vehicle          Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  vehicle          Vehicle                      @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
   materialId       String
-  material         Material         @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  material         Material                     @relation(fields: [materialId], references: [id], onDelete: Restrict)
   targetQuantity   Int // Sollbestand
-  minQuantity      Int              @default(0) // Mindestbestand
-  currentQuantity  Int              @default(0) // = Summe der Chargen bei chargengeführten Materialien
+  minQuantity      Int                          @default(0) // Mindestbestand
+  currentQuantity  Int                          @default(0) // = Summe der Chargen bei chargengeführten Materialien
   compartment      String? // Fach / Schrank / Tasche im Fahrzeug
   // Externer Lagerort für Nachfüllmaterial
   refillLocationId String?
-  refillLocation   StorageLocation? @relation(fields: [refillLocationId], references: [id], onDelete: SetNull)
+  refillLocation   StorageLocation?             @relation(fields: [refillLocationId], references: [id], onDelete: SetNull)
   remarks          String?
   lastCheckedAt    DateTime?
-  active           Boolean          @default(true)
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  active           Boolean                      @default(true)
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime                     @updatedAt
   batches          MaterialBatch[]
-  movementsOut     StockMovement[]  @relation("MovementFromVehicle")
-  movementsIn      StockMovement[]  @relation("MovementToVehicle")
+  movementsOut     StockMovement[]              @relation("MovementFromVehicle")
+  movementsIn      StockMovement[]              @relation("MovementToVehicle")
   refillRequests   RefillRequest[]
+  checkResults     VehicleCheckMaterialResult[]
 
   @@unique([vehicleId, materialId])
   @@index([materialId])

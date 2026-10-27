@@ -13,8 +13,8 @@ const HINTS: Record<string, string> = {
   kontrollen: "Durchgeführte Fahrzeugkontrollen im Zeitraum",
   maengel: "Mängel mit Status, Schweregrad und Zuständigkeit",
   termine: "TÜV-, Prüf- und Wartungstermine",
-  bestand: "Soll-/Ist-Bestände inkl. Chargen und Lagerorte",
-  verfall: "Abgelaufene und bald ablaufende Chargen (Fahrzeuge und Lager)",
+  bestand: "Soll-/Ist-Bestände inkl. Verfallsdaten und Lagerorte",
+  verfall: "Abgelaufenes und bald ablaufendes Material (Fahrzeuge und Lager)",
   bewegungen: "Alle Zu- und Abgänge im Zeitraum",
   nachfuellung: "Aktive Nachfüllanforderungen mit Lagerorten (Packliste)",
 };

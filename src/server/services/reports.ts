@@ -19,6 +19,7 @@ import type { Actor } from "../actor";
 import { requirePermission } from "../actor";
 import { assertVehicleAccess, viaVehicle } from "../access";
 import { forbidden, invalid } from "../errors";
+import { materialVisibility } from "../material-visibility";
 import { getSettings } from "../settings";
 import { listChecks } from "./checks";
 import { listDefects } from "./defects";
@@ -129,7 +130,7 @@ export async function buildReport(actor: Actor, type: string, p: ReportParams): 
     case "bestand": {
       requirePermission(actor, "materials.view");
       const stocks = await db.vehicleMaterialStock.findMany({
-        where: { active: true, ...viaVehicle(actor), ...(p.vehicleId ? { vehicleId: p.vehicleId } : {}), ...((await getSettings()).medicationsEnabled ? {} : { material: { category: { isMedication: false } } }) },
+        where: { active: true, ...viaVehicle(actor), ...(p.vehicleId ? { vehicleId: p.vehicleId } : {}), material: materialVisibility(actor, (await getSettings()).medicationsEnabled) },
         include: { vehicle: { select: { name: true } }, material: { include: { category: true } }, batches: { where: { quantity: { gt: 0 } }, orderBy: { expiryDate: "asc" } }, refillLocation: { include: { warehouse: true } } },
         orderBy: [{ vehicle: { name: "asc" } }, { material: { name: "asc" } }],
       });

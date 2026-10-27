@@ -9,14 +9,28 @@ import { CHECK_TYPE, DEFECT_CATEGORY, DEFECT_SEVERITY } from "@/lib/labels";
 import { LocalFilePicker } from "./Uploader";
 import { Alert, Button } from "./ui";
 import { useOnline } from "./pwa";
+import { CheckMaterials, materialPayload, materialProblems, type CheckStock, type MaterialState } from "./check-materials";
 
 type Item = { id: string; label: string; description: string | null };
 type Result = { result?: "OK" | "DEFECT" | "NOT_APPLICABLE"; note?: string; createDefect?: boolean; title?: string; severity?: string; category?: string };
 
-export function CheckForm({ userId, vehicle, checklist, draftId }: { userId: string; vehicle: { id: string; name: string; mileage: number | null }; checklist: { id: string; name: string; description: string | null; items: Item[] }; draftId?: string }) {
+export function CheckForm({
+  userId,
+  vehicle,
+  checklist,
+  draftId,
+  materials,
+}: {
+  userId: string;
+  vehicle: { id: string; name: string; mileage: number | null };
+  checklist: { id: string; name: string; description: string | null; items: Item[] };
+  draftId?: string;
+  materials: { stocks: CheckStock[]; hiddenNarcotics: number; today: string; warnDays: number; loadedAt: string };
+}) {
   const router = useRouter();
   const online = useOnline();
   const [results, setResults] = useState<Record<string, Result>>({});
+  const [matState, setMatState] = useState<Record<string, MaterialState>>({});
   const [checkType, setCheckType] = useState("ROUTINE");
   const [mileage, setMileage] = useState("");
   const [remarks, setRemarks] = useState("");
@@ -32,11 +46,31 @@ export function CheckForm({ userId, vehicle, checklist, draftId }: { userId: str
     listDrafts(userId).then((all) => {
       const d = all.find((x) => x.id === draftId);
       if (!d) return;
-      const p = d.payload as { checkType: string; mileage?: string; remarks?: string; results: { itemId: string; result: Result["result"]; note?: string; defect?: { title: string; severity: string; category: string } }[] };
+      const p = d.payload as {
+        checkType: string;
+        mileage?: string;
+        remarks?: string;
+        results: { itemId: string; result: Result["result"]; note?: string; defect?: { title: string; severity: string; category: string } }[];
+        materials?: ReturnType<typeof materialPayload>;
+      };
       setCheckType(p.checkType);
       setMileage(p.mileage ?? "");
       setRemarks(p.remarks ?? "");
       setResults(Object.fromEntries(p.results.map((r) => [r.itemId, { result: r.result, note: r.note, createDefect: Boolean(r.defect), ...r.defect }])));
+      setMatState(
+        Object.fromEntries(
+          (p.materials ?? []).map((m) => [
+            m.stockId,
+            {
+              status: m.status,
+              counted: m.counted,
+              note: m.note,
+              newBatches: m.newBatches,
+              batches: m.batches ? Object.fromEntries(m.batches.map((b) => [b.batchId, { counted: b.counted, expiredRemoved: b.expiredRemoved }])) : undefined,
+            } satisfies MaterialState,
+          ]),
+        ),
+      );
       setFiles(d.files.map((f) => new File([f.blob], f.name, { type: f.type })));
       setError(d.message ? { message: d.message } : null);
       setClientRef(d.id);
@@ -54,6 +88,8 @@ export function CheckForm({ userId, vehicle, checklist, draftId }: { userId: str
       mileage,
       remarks,
       performedAt: new Date().toISOString(),
+      materialsLoadedAt: materials.loadedAt,
+      materials: materialPayload(materials.stocks, matState),
       results: checklist.items.map((i) => {
         const r = results[i.id] ?? {};
         return {
@@ -64,7 +100,7 @@ export function CheckForm({ userId, vehicle, checklist, draftId }: { userId: str
         };
       }),
     }),
-    [checklist, checkType, mileage, remarks, results],
+    [checklist, checkType, mileage, remarks, results, materials, matState],
   );
 
   async function submit() {
@@ -73,6 +109,14 @@ export function CheckForm({ userId, vehicle, checklist, draftId }: { userId: str
     if (missing.length) {
       setError({ message: `Bitte alle Prüfpunkte bewerten (${missing.length} offen).` });
       document.getElementById(`item-${missing[0].id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    const matFields = materialProblems(materials.stocks, matState);
+    const firstMat = materials.stocks.find((s) => matFields[`mat_${s.id}`] || matFields[`matnote_${s.id}`]);
+    if (firstMat) {
+      const open = materials.stocks.filter((s) => !matState[s.id]?.status).length;
+      setError({ message: open ? `Bitte alle Materialpositionen prüfen (${open} offen).` : "Bitte die markierten Materialpositionen vervollständigen.", fields: matFields });
+      document.getElementById(`mat-${firstMat.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setBusy(true);
@@ -129,7 +173,11 @@ export function CheckForm({ userId, vehicle, checklist, draftId }: { userId: str
       </div>
 
       <div className="sticky top-[57px] z-10 -mx-4 flex items-center justify-between gap-2 border-y border-gray-200 bg-white/95 px-4 py-2 text-sm backdrop-blur sm:mx-0 sm:rounded-lg sm:border">
-        <span className="font-semibold">{answered} / {checklist.items.length} bewertet{defects ? <span className="ml-2 text-drk-600">· {defects} Mangel</span> : null}</span>
+        <span className="font-semibold">
+          {answered} / {checklist.items.length} bewertet
+          {materials.stocks.length > 0 && <span className="ml-2 font-normal text-gray-600">· Material {materials.stocks.filter((s) => matState[s.id]?.status).length} / {materials.stocks.length}</span>}
+          {defects ? <span className="ml-2 text-drk-600">· {defects} Mangel</span> : null}
+        </span>
         <button
           type="button"
           className="min-h-10 rounded-lg px-3 font-semibold text-green-800 hover:bg-green-50"
@@ -215,6 +263,17 @@ export function CheckForm({ userId, vehicle, checklist, draftId }: { userId: str
           );
         })}
       </ol>
+
+      <CheckMaterials
+        stocks={materials.stocks}
+        state={matState}
+        onChange={setMatState}
+        errors={error?.fields}
+        today={materials.today}
+        warnDays={materials.warnDays}
+        hiddenNarcotics={materials.hiddenNarcotics}
+        vehicleId={vehicle.id}
+      />
 
       <div className="card space-y-4 p-4">
         <div>

@@ -57,7 +57,9 @@ const EXAMPLE_CHECKLIST = [
 ];
 
 async function main() {
+  const newPermissions = new Set<string>();
   for (const [key, description] of Object.entries(PERMISSIONS)) {
+    if (!(await db.permission.findUnique({ where: { key } }))) newPermissions.add(key);
     await db.permission.upsert({ where: { key }, create: { key, description }, update: { description } });
   }
   const perms = await db.permission.findMany();
@@ -69,9 +71,9 @@ async function main() {
       update: { name: def.name, description: def.description, isSystem: true },
     });
     // Rechte nur beim ersten Anlegen setzen (spätere Anpassungen durch Admins bleiben erhalten);
-    // die Administrator-Rolle erhält immer alle Rechte.
-    if (!existing || key === "ADMIN") {
-      for (const pk of def.permissions) {
+    // die Administrator-Rolle erhält immer alle Rechte. Neu eingeführte Rechte erhalten auch bestehende Rollen.
+    if (!existing || key === "ADMIN" || def.permissions.some((pk) => newPermissions.has(pk))) {
+      for (const pk of def.permissions.filter((pk) => !existing || key === "ADMIN" || newPermissions.has(pk))) {
         const p = perms.find((x) => x.key === pk)!;
         await db.rolePermission.upsert({ where: { roleId_permissionId: { roleId: role.id, permissionId: p.id } }, create: { roleId: role.id, permissionId: p.id }, update: {} });
       }

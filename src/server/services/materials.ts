@@ -11,6 +11,7 @@ import { conflict, forbidden, invalid, notFound } from "../errors";
 import { notify, recipientsFor } from "../notifications";
 import { getSettings } from "../settings";
 import { parse } from "../validate";
+import { materialVisibility } from "../material-visibility";
 import { linkAttachments } from "./attachments";
 import { changeBatch, changeVehicleQuantity, createMovement, findOrCreateBatch, lockVehicleStock, syncRefillRequest } from "./stock-core";
 
@@ -45,8 +46,20 @@ const materialSchema = z.object({
   unit: reqText(30),
   manufacturer: optText(100),
   batchTracked: checkbox(),
+  isEquipment: checkbox(),
+  isNarcotic: checkbox(),
   remarks: optText(2000),
 });
+
+/** BtM sind immer verfallsdatumsgeführt; das BtM-Kennzeichen darf nur mit BtM-Recht gesetzt/entfernt werden. */
+function normalizeMaterialFlags(actor: Actor, d: z.infer<typeof materialSchema>, before?: { isNarcotic: boolean }) {
+  if (d.isNarcotic !== (before?.isNarcotic ?? false)) requirePermission(actor, "materials.btm");
+  if (d.isNarcotic) {
+    d.batchTracked = true;
+    d.isEquipment = false;
+  }
+  return d;
+}
 
 async function assertCategoryAllowed(categoryId: string) {
   const cat = await db.materialCategory.findUnique({ where: { id: categoryId } });
@@ -62,7 +75,7 @@ export async function listMaterials(actor: Actor, filter: { q?: string; category
     where: {
       ...(filter.includeArchived ? {} : { archived: false }),
       ...(filter.categoryId ? { categoryId: filter.categoryId } : {}),
-      ...(settings.medicationsEnabled ? {} : { category: { isMedication: false } }),
+      ...materialVisibility(actor, settings.medicationsEnabled),
       ...(filter.q
         ? { OR: [{ name: { contains: filter.q, mode: "insensitive" } }, { articleNumber: { contains: filter.q, mode: "insensitive" } }] }
         : {}),
@@ -74,7 +87,7 @@ export async function listMaterials(actor: Actor, filter: { q?: string; category
 
 export async function createMaterial(actor: Actor, input: unknown, imageId?: string) {
   requirePermission(actor, "materials.catalog");
-  const d = parse(materialSchema, input);
+  const d = normalizeMaterialFlags(actor, parse(materialSchema, input));
   await assertCategoryAllowed(d.categoryId);
   const dup = await db.material.findFirst({ where: { name: { equals: d.name, mode: "insensitive" }, articleNumber: d.articleNumber ?? null } });
   if (dup) throw invalid("Material existiert bereits", { name: "Bereits im Katalog" });
@@ -90,17 +103,18 @@ export async function updateMaterial(actor: Actor, id: string, input: unknown, i
   requirePermission(actor, "materials.catalog");
   const before = await db.material.findUnique({ where: { id } });
   if (!before) throw notFound();
-  const d = parse(materialSchema.extend({ archived: checkbox() }), input);
+  if (before.isNarcotic) requirePermission(actor, "materials.btm");
+  const d = { ...normalizeMaterialFlags(actor, parse(materialSchema, input), before), archived: parse(z.object({ archived: checkbox() }), input).archived };
   await assertCategoryAllowed(d.categoryId);
   if (before.batchTracked && !d.batchTracked) {
     const batches = await db.materialBatch.count({ where: { materialId: id, quantity: { gt: 0 } } });
-    if (batches) throw invalid("Chargenführung kann nicht deaktiviert werden, solange Chargen Bestand haben.", { batchTracked: "Chargen vorhanden" });
+    if (batches) throw invalid("„Mit Verfallsdatum“ kann nicht abgeschaltet werden, solange Bestand mit Verfallsdatum vorhanden ist.", { batchTracked: "Bestand vorhanden" });
   }
   if (!before.batchTracked && d.batchTracked) {
     const stocked = await db.vehicleMaterialStock.count({ where: { materialId: id, currentQuantity: { gt: 0 } } });
     const wStocked = await db.warehouseStock.count({ where: { materialId: id, quantity: { gt: 0 } } });
     if (stocked || wStocked)
-      throw invalid("Chargenführung kann nur aktiviert werden, solange kein Bestand vorhanden ist.", { batchTracked: "Bestand vorhanden" });
+      throw invalid("„Mit Verfallsdatum“ kann nur eingeschaltet werden, solange kein Bestand vorhanden ist.", { batchTracked: "Bestand vorhanden" });
   }
   const { oldValues, newValues, changed } = diff(before as unknown as Record<string, unknown>, { ...d, articleNumber: d.articleNumber ?? null });
   await db.$transaction(async (tx) => {
@@ -131,7 +145,7 @@ export async function listVehicleStock(actor: Actor, vehicleId: string, filter: 
       material: {
         ...(filter.categoryId ? { categoryId: filter.categoryId } : {}),
         ...(filter.q ? { name: { contains: filter.q, mode: "insensitive" as const } } : {}),
-        ...(settings.medicationsEnabled ? {} : { category: { isMedication: false } }),
+        ...materialVisibility(actor, settings.medicationsEnabled),
       },
     },
     include: {
@@ -163,8 +177,9 @@ export async function listVehicleStock(actor: Actor, vehicleId: string, filter: 
 
 export async function getVehicleStock(actor: Actor, stockId: string) {
   requirePermission(actor, "materials.view");
+  const settings = await getSettings();
   const s = await db.vehicleMaterialStock.findFirst({
-    where: { id: stockId, ...viaVehicle(actor) },
+    where: { id: stockId, ...viaVehicle(actor), material: materialVisibility(actor, settings.medicationsEnabled) },
     include: {
       vehicle: true,
       material: { include: { category: true } },
@@ -204,6 +219,7 @@ export async function createVehicleStock(
   if (d.minQuantity > d.targetQuantity) throw invalid("Mindestbestand darf den Sollbestand nicht übersteigen.", { minQuantity: "Größer als Sollbestand" });
   const material = await db.material.findUnique({ where: { id: d.materialId }, include: { category: true } });
   if (!material || material.archived) throw invalid("Material ungültig", { materialId: "Ungültig" });
+  if (material.isNarcotic) requirePermission(actor, "materials.btm");
   await assertCategoryAllowed(material.categoryId);
   if (await db.vehicleMaterialStock.findUnique({ where: { vehicleId_materialId: { vehicleId, materialId: d.materialId } } }))
     throw invalid("Dieses Material ist im Fahrzeug bereits angelegt.", { materialId: "Bereits vorhanden" });
@@ -281,7 +297,7 @@ export async function writeOffMaterial(actor: Actor, input: unknown, attachmentI
   if (d.reason === "OTHER" && !d.note) throw invalid("Bitte den Grund in der Bemerkung angeben.", { note: "Pflicht bei „Sonstiger Grund“" });
 
   // Zugriffsprüfung vor der Transaktion (NOT_FOUND bei fremden Fahrzeugen)
-  const visible = await db.vehicleMaterialStock.findFirst({ where: { id: d.stockId, active: true, ...viaVehicle(actor) }, select: { id: true } });
+  const visible = await db.vehicleMaterialStock.findFirst({ where: { id: d.stockId, active: true, ...viaVehicle(actor), material: materialVisibility(actor, (await getSettings()).medicationsEnabled) }, select: { id: true } });
   if (!visible) throw notFound("Materialposition nicht gefunden oder kein Zugriff.");
 
   if (d.clientRef) {
@@ -297,11 +313,11 @@ export async function writeOffMaterial(actor: Actor, input: unknown, attachmentI
     let batchId: string | null = null;
 
     if (stock.material.batchTracked) {
-      if (!d.batchId) throw invalid("Bitte die betroffene Charge auswählen.", { batchId: "Charge erforderlich" });
+      if (!d.batchId) throw invalid("Bitte das betroffene Verfallsdatum auswählen.", { batchId: "Verfallsdatum erforderlich" });
       const batch = await tx.materialBatch.findFirst({ where: { id: d.batchId, vehicleStockId: stock.id } });
-      if (!batch) throw invalid("Die gewählte Charge gehört nicht zu dieser Materialposition.", { batchId: "Ungültige Charge" });
+      if (!batch) throw invalid("Das gewählte Verfallsdatum gehört nicht zu dieser Materialposition.", { batchId: "Ungültig" });
       if (batch.quantity < d.quantity)
-        throw invalid(`In dieser Charge sind nur ${batch.quantity} ${stock.material.unit} vorhanden.`, { quantity: `Maximal ${batch.quantity}` });
+        throw invalid(`Mit diesem Verfallsdatum sind nur ${batch.quantity} ${stock.material.unit} vorhanden.`, { quantity: `Maximal ${batch.quantity}` });
       await changeBatch(tx, batch.id, -d.quantity);
       batchId = batch.id;
       batchNumber = batch.batchNumber;
@@ -369,7 +385,7 @@ const correctionSchema = z.object({
 export async function correctVehicleStock(actor: Actor, input: unknown) {
   requirePermission(actor, "materials.manage");
   const d = parse(correctionSchema, input);
-  const visible = await db.vehicleMaterialStock.findFirst({ where: { id: d.stockId, active: true, ...viaVehicle(actor) }, select: { id: true } });
+  const visible = await db.vehicleMaterialStock.findFirst({ where: { id: d.stockId, active: true, ...viaVehicle(actor), material: materialVisibility(actor, (await getSettings()).medicationsEnabled) }, select: { id: true } });
   if (!visible) throw notFound("Materialposition nicht gefunden oder kein Zugriff.");
 
   return db.$transaction(async (tx) => {
@@ -437,6 +453,7 @@ export async function expiringBatches(actor: Actor, opts: { days?: number; vehic
           quantity: { gt: 0 },
           expiryDate: { lte: limit },
           vehicleStock: { active: true, ...viaVehicle(actor), ...(opts.vehicleId ? { vehicleId: opts.vehicleId } : {}) },
+          material: materialVisibility(actor, settings.medicationsEnabled),
         },
         include: { material: { include: { category: true } }, vehicleStock: { include: { vehicle: { select: { id: true, name: true, licensePlate: true } } } } },
         orderBy: { expiryDate: "asc" },

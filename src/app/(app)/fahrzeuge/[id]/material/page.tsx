@@ -98,14 +98,14 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
           ) : (
             <ActionForm action={createStockAction.bind(null, id)}>
               <div className="grid gap-4 md:grid-cols-3">
-                <SelectInput label="Material" name="materialId" required placeholder="Bitte wählen" className="md:col-span-2" options={materials.filter((m) => !used.has(m.id)).map((m) => ({ value: m.id, label: `${m.name} (${m.category.name}${m.batchTracked ? ", chargengeführt" : ""})` }))} />
+                <SelectInput label="Material" name="materialId" required placeholder="Bitte wählen" className="md:col-span-2" options={materials.filter((m) => !used.has(m.id)).map((m) => ({ value: m.id, label: `${m.name} (${m.category.name}${m.batchTracked ? ", mit Verfallsdatum" : ""}${m.isNarcotic ? ", BtM" : ""})` }))} />
                 <TextInput label="Fach / Schrank / Tasche" name="compartment" placeholder="z. B. Schrank 2, Fach B" />
                 <TextInput label="Sollbestand" name="targetQuantity" type="number" inputMode="numeric" min={0} required />
                 <TextInput label="Mindestbestand" name="minQuantity" type="number" inputMode="numeric" min={0} required defaultValue={0} />
                 <SelectInput label="Nachfülllager" name="refillLocationId" placeholder="– kein –" options={locations.map((l) => ({ value: l.id, label: `${l.warehouse.name} – ${l.name}` }))} />
                 <TextInput label="Anfangsbestand" name="initialQuantity" type="number" inputMode="numeric" min={0} defaultValue={0} hint="Wird als protokollierte Erstbuchung erfasst" />
-                <TextInput label="Charge (bei chargengeführtem Material)" name="initialBatchNumber" />
-                <TextInput label="Verfallsdatum der Charge" name="initialBatchExpiry" type="date" hint="Pflicht bei chargengeführtem Material mit Anfangsbestand" />
+                <TextInput label="Chargennummer (optional, bei BtM Pflicht)" name="initialBatchNumber" />
+                <TextInput label="Verfallsdatum" name="initialBatchExpiry" type="date" hint="Pflicht bei Material mit Verfallsdatum und Anfangsbestand" />
               </div>
               <TextArea label="Bemerkungen" name="remarks" rows={2} />
               <SubmitButton>Position anlegen</SubmitButton>

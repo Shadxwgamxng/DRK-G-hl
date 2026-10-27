@@ -161,6 +161,10 @@ if [ "$FIRST_INSTALL" = 1 ]; then
   if [ "${FLEET:-J}" != "n" ] && [ "${FLEET:-J}" != "N" ]; then
     docker compose exec -T app npx tsx prisma/fahrzeuge-goehl.ts
   fi
+  read -rp "Standard-Materialkatalog (293 Artikel, ohne Mengen) importieren? [J/n] " CATALOG
+  if [ "${CATALOG:-J}" != "n" ] && [ "${CATALOG:-J}" != "N" ]; then
+    docker compose exec -T app npx tsx prisma/materialkatalog.ts
+  fi
 fi
 
 # 7) Cronjobs: täglicher Erinnerungslauf + nächtliches Backup

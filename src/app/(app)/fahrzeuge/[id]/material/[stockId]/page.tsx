@@ -34,7 +34,7 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
             ["Nachfülllager", s.refillLocation ? `${s.refillLocation.warehouse.name}, ${s.refillLocation.name}` : "–"],
             ["Artikelnummer", s.material.articleNumber ?? "–"],
             ["Hersteller", s.material.manufacturer ?? "–"],
-            ["Chargenführung", s.material.batchTracked ? "Ja – Bestand je Charge mit Verfallsdatum" : "Nein"],
+            ["Verfallsdatum", s.material.batchTracked ? "Ja – Bestand je Verfallsdatum geführt" : "Nein"],
             ["Letzte Kontrolle", fmtDateTime(s.lastCheckedAt)],
           ]}
         />
@@ -48,11 +48,11 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
       </Card>
 
       {s.material.batchTracked && (
-        <Card title="Chargen im Fahrzeug" padded={batchesWithStock.length === 0}>
-          {batchesWithStock.length === 0 ? <p className="text-sm text-gray-600">Keine Chargen mit Bestand.</p> : (
+        <Card title="Bestand nach Verfallsdatum" padded={batchesWithStock.length === 0}>
+          {batchesWithStock.length === 0 ? <p className="text-sm text-gray-600">Kein Bestand mit Verfallsdatum erfasst.</p> : (
             <TableWrap>
               <table className="table-base">
-                <thead><tr><th>Charge</th><th>Verfallsdatum</th><th className="text-right">Menge</th></tr></thead>
+                <thead><tr><th>Chargennr.</th><th>Verfallsdatum</th><th className="text-right">Menge</th></tr></thead>
                 <tbody>
                   {batchesWithStock.map((b) => (
                     <tr key={b.id}><td>{b.batchNumber ?? "ohne Nummer"}</td><td><ExpiryBadge date={b.expiryDate} /></td><td className="text-right tabular-nums">{b.quantity} {s.material.unit}</td></tr>
@@ -88,10 +88,10 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
               <input type="hidden" name="stockId" value={s.id} />
               {s.material.batchTracked && (
                 <>
-                  <SelectInput label="Charge" name="batchId" placeholder="– neue Charge einbuchen –" options={s.batches.map((b) => ({ value: b.id, label: `${b.batchNumber ?? "o. Nr."} · ${fmtDate(b.expiryDate)} · ${b.quantity}` }))} />
-                  <Checkbox name="newBatch" label="Neue Charge einbuchen" />
+                  <SelectInput label="Verfallsdatum" name="batchId" placeholder="– neues Verfallsdatum einbuchen –" options={s.batches.map((b) => ({ value: b.id, label: `Verfall ${fmtDate(b.expiryDate)} · ${b.quantity} ${s.material.unit}${b.batchNumber ? ` · Ch. ${b.batchNumber}` : ""}` }))} />
+                  <Checkbox name="newBatch" label="Neues Verfallsdatum einbuchen" />
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <TextInput label="Chargennummer (neu)" name="batchNumber" />
+                    <TextInput label={s.material.isNarcotic ? "Chargennummer (Pflicht bei BtM)" : "Chargennummer (optional)"} name="batchNumber" />
                     <TextInput label="Verfallsdatum (neu)" name="expiryDate" type="date" />
                   </div>
                 </>
@@ -123,7 +123,7 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
         {s.movements.length === 0 ? <p className="text-sm text-gray-600">Noch keine Buchungen.</p> : (
           <TableWrap>
             <table className="table-base">
-              <thead><tr><th>Zeitpunkt</th><th>Art</th><th className="text-right">Menge</th><th>Charge</th><th>Benutzer</th><th>Bemerkung</th></tr></thead>
+              <thead><tr><th>Zeitpunkt</th><th>Art</th><th className="text-right">Menge</th><th>Verfall / Ch.</th><th>Benutzer</th><th>Bemerkung</th></tr></thead>
               <tbody>
                 {s.movements.map((m) => {
                   const delta = m.fromVehicleStockId === s.id ? -Math.abs(m.quantity) : Math.abs(m.quantity);

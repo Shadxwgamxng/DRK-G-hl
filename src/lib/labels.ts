@@ -139,3 +139,10 @@ export const AUDIT_ACTION: Record<string, string> = {
   "checklist.update": "Checkliste geändert",
   "master.update": "Stammdaten geändert",
 };
+
+export const CHECK_MATERIAL_STATUS: Record<string, string> = {
+  OK: "Stimmt",
+  DEVIATION: "Abweichung gebucht",
+  MISSING: "Fehlt",
+  DEFECT: "Defekt (Mangel gemeldet)",
+};

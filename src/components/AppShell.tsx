@@ -75,7 +75,7 @@ export async function AppShell({ actor, children }: { actor: Actor; children: Re
           <div className="flex items-center gap-2 px-4 py-2 sm:px-6">
             <form action="/suche" className="relative min-w-0 flex-1" role="search">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" aria-hidden />
-              <input type="search" name="q" placeholder="Suche: Fahrzeug, Material, Mangel, Charge …" aria-label="Globale Suche" className="input min-h-11 pl-10" />
+              <input type="search" name="q" placeholder="Suche: Fahrzeug, Material, Mangel, Chargennr. …" aria-label="Globale Suche" className="input min-h-11 pl-10" />
             </form>
             <SyncIndicator userId={actor.id} />
             <Link href="/benachrichtigungen" className="focus-ring relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-drkblue-50" aria-label={`Benachrichtigungen${unread ? ` (${unread} ungelesen)` : ""}`}>

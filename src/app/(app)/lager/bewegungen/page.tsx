@@ -47,7 +47,7 @@ export default async function MovementsPage({ searchParams }: { searchParams: Pr
         {rows.length === 0 ? <p className="text-sm text-gray-600">Keine Bewegungen gefunden.</p> : (
           <TableWrap>
             <table className="table-base">
-              <thead><tr><th>Zeitpunkt</th><th>Art</th><th>Material</th><th className="text-right">Menge</th><th>Von</th><th>Nach</th><th>Charge</th><th>Benutzer</th><th>Bemerkung</th></tr></thead>
+              <thead><tr><th>Zeitpunkt</th><th>Art</th><th>Material</th><th className="text-right">Menge</th><th>Von</th><th>Nach</th><th>Verfall / Ch.</th><th>Benutzer</th><th>Bemerkung</th></tr></thead>
               <tbody>
                 {rows.map((m) => (
                   <tr key={m.id}>

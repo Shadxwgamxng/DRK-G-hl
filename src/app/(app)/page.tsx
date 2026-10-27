@@ -64,8 +64,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             {can(actor, "materials.view") && (
               <>
                 <StatTile label="Fehlende Materialien" value={k.missingMaterials} tone={k.missingMaterials ? "orange" : "gray"} hint="Positionen unter Soll" icon={<PackageX className="h-6 w-6" />} />
-                <StatTile label="Abgelaufen" value={k.expiredBatches} tone={k.expiredBatches ? "red" : "gray"} hint="Chargen" icon={<Package className="h-6 w-6" />} href="/berichte?typ=verfall" />
-                <StatTile label={`Ablauf ≤ ${d.expiryWarningDays} Tage`} value={k.expiringBatches} tone={k.expiringBatches ? "yellow" : "gray"} hint="Chargen" icon={<Package className="h-6 w-6" />} href="/berichte?typ=verfall" />
+                <StatTile label="Abgelaufen" value={k.expiredBatches} tone={k.expiredBatches ? "red" : "gray"} hint="Positionen" icon={<Package className="h-6 w-6" />} href="/berichte?typ=verfall" />
+                <StatTile label={`Ablauf ≤ ${d.expiryWarningDays} Tage`} value={k.expiringBatches} tone={k.expiringBatches ? "yellow" : "gray"} hint="Positionen" icon={<Package className="h-6 w-6" />} href="/berichte?typ=verfall" />
               </>
             )}
             <StatTile label="Offene Nachfüllungen" value={k.openRefills} tone={k.openRefills ? "blue" : "gray"} icon={<PackagePlus className="h-6 w-6" />} href="/nachfuellung" />

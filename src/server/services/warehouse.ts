@@ -157,9 +157,9 @@ export async function warehouseMovement(actor: Actor, input: unknown) {
     const ws = await lockWarehouseStock(tx, d.warehouseStockId);
     let batch = null;
     if (ws.material.batchTracked) {
-      if (!d.batchId) throw invalid("Bitte Charge wählen.", { batchId: "Pflichtfeld" });
+      if (!d.batchId) throw invalid("Bitte das Verfallsdatum wählen.", { batchId: "Pflichtfeld" });
       batch = await tx.materialBatch.findFirst({ where: { id: d.batchId, warehouseStockId: ws.id } });
-      if (!batch) throw invalid("Charge ungültig", { batchId: "Ungültig" });
+      if (!batch) throw invalid("Verfallsdatum ungültig", { batchId: "Ungültig" });
     }
     let delta: number;
     if (d.mode === "CORRECTION") {

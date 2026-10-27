@@ -14,6 +14,7 @@ Rollen bestehen aus einzelnen Rechten (Tabelle `Permission`) und können unter *
 | materials.view / .report (austragen, fehlend melden) | ✔ | ✔ | ✔ | ✔ |
 | materials.manage – Soll, Chargen, Inventur | ✔ | ✔ | | |
 | materials.catalog – Katalog & Kategorien | ✔ | | ✔ | |
+| materials.btm – Betäubungsmittel einsehen, prüfen, buchen | ✔ | ✔ | | |
 | refills.confirm – Nachfüllung bestätigen | ✔ | ✔ | ✔ | |
 | refills.process – Lager: übernehmen, bereitstellen, stornieren | ✔ | | ✔ | |
 | warehouse.view / .manage | ✔ | | ✔ | |

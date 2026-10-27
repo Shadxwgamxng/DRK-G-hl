@@ -77,25 +77,25 @@ export function WriteOffForm({ userId, vehicleId, stock, title }: { userId: stri
       </div>
       {stock.batchTracked ? (
         <div>
-          <label className="label" htmlFor="wo-batch">Betroffene Charge *</label>
+          <label className="label" htmlFor="wo-batch">Welches Verfallsdatum? *</label>
           {stock.batches.length === 0 ? (
-            <p className="text-sm text-gray-600">Keine Charge mit Bestand vorhanden.</p>
+            <p className="text-sm text-gray-600">Kein Bestand mit Verfallsdatum vorhanden.</p>
           ) : (
             <select id="wo-batch" className="input" value={batchId} onChange={(e) => setBatchId(e.target.value)} aria-invalid={Boolean(msg?.fields?.batchId)}>
               {stock.batches.map((b) => (
                 <option key={b.id} value={b.id}>
-                  Charge {b.batchNumber ?? "o. Nr."} · Verfall {fmtDate(b.expiryDate)} · {b.quantity} {stock.unit}
+                  Verfall {fmtDate(b.expiryDate)} · {b.quantity} {stock.unit}{b.batchNumber ? ` · Ch. ${b.batchNumber}` : ""}
                   {b.expiryDate && b.expiryDate.slice(0, 10) < today ? " · ABGELAUFEN" : ""}
                 </option>
               ))}
             </select>
           )}
-          <p className="mt-1 text-xs text-gray-500">Nur die gewählte Charge wird belastet – andere Chargen desselben Artikels bleiben unverändert.</p>
+          <p className="mt-1 text-xs text-gray-500">Nur diese Stücke werden ausgetragen – Stücke mit anderem Verfallsdatum bleiben unverändert.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="label" htmlFor="wo-bn">Chargennummer (falls relevant)</label>
+            <label className="label" htmlFor="wo-bn">Chargennummer (optional)</label>
             <input id="wo-bn" className="input" value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} />
           </div>
           <div>

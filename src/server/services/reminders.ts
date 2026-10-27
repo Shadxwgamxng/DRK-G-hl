@@ -46,11 +46,12 @@ export async function runReminders(now = new Date()) {
   for (const b of batches) {
     const vs = b.vehicleStock!;
     const expired = b.expiryDate! < today;
-    const recipients = await recipientsFor({ permission: "materials.manage", vehicleId: vs.vehicleId });
+    // Betäubungsmittel nur an Personen mit BtM-Recht melden
+    const recipients = await recipientsFor({ permission: b.material.isNarcotic ? "materials.btm" : "materials.manage", vehicleId: vs.vehicleId });
     created += await notify(recipients, {
       type: expired ? "material_expired" : "material_expiring",
       title: `${expired ? "Abgelaufen" : "Läuft bald ab"}: ${b.material.name} – ${vs.vehicle.name}`,
-      body: `${b.quantity} ${b.material.unit}, Charge ${b.batchNumber ?? "–"}, Verfall ${fmtDate(b.expiryDate)}${vs.compartment ? `, ${vs.compartment}` : ""}`,
+      body: `${b.quantity} ${b.material.unit}, Verfall ${fmtDate(b.expiryDate)}${b.batchNumber ? `, Ch. ${b.batchNumber}` : ""}${vs.compartment ? `, ${vs.compartment}` : ""}`,
       link: `/fahrzeuge/${vs.vehicleId}/material/${vs.id}`,
       dedupeKey: `batch:${b.id}:${expired ? "expired" : "expiring"}`,
     });
