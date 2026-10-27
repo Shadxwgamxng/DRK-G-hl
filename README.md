@@ -10,6 +10,12 @@ Web-App (installierbar als PWA) zur Verwaltung von Einsatzfahrzeugen, Fahrzeugko
 | Datenbank-Backup & Wiederherstellung, Löschkonzept | [docs/BACKUP.md](docs/BACKUP.md) |
 | Abnahmetests und Teststatus | [docs/TESTS.md](docs/TESTS.md) |
 
+## Screenshots
+
+Bildschirmfotos im PC-Format (1920×1080, Demo-Daten) liegen in [docs/screenshots](docs/screenshots).
+
+![Übersicht](docs/screenshots/01-dashboard.png)
+
 ## Technik
 
 Next.js 15 (App Router, Server Components, Server Actions) · TypeScript · Tailwind CSS · PostgreSQL 16 · Prisma 6 · eigene serverseitige Sitzungen (bcrypt, httpOnly-Cookie) · Zod-Validierung · pdf-lib (PDF-Export) · Service Worker + IndexedDB (Offline-Entwürfe) · Vitest (Integrationstests gegen echte PostgreSQL-DB).
