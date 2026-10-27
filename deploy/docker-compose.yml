@@ -38,15 +38,19 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000" # nur lokal (für vorhandenen nginx / Health-Check)
 
+  # Eigener HTTPS-Proxy – nur wenn Port 80/443 frei sind (COMPOSE_PROFILES=caddy in .env)
   caddy:
     image: caddy:2
+    profiles: ["caddy"]
     restart: unless-stopped
     depends_on:
       - app
     environment:
-      DOMAIN: ${DOMAIN:?DOMAIN in deploy/.env setzen}
-      TLS: ${TLS:?TLS in deploy/.env setzen (E-Mail für Let's Encrypt oder internal)}
+      DOMAIN: ${DOMAIN:-localhost}
+      TLS: ${TLS:-internal}
     ports:
       - "80:80"
       - "443:443"

@@ -45,6 +45,14 @@ Danach macht es automatisch:
 
 Am Ende werden **Adresse, Admin-Benutzername und Admin-Passwort** angezeigt – sofort notieren.
 
+### Server mit vorhandenem nginx (Port 80/443 belegt)
+Erkennt das Skript einen laufenden Webserver auf Port 80/443, nutzt es diesen statt eines eigenen HTTPS-Proxys:
+- legt `/etc/nginx/sites-available/drk-kfz-warte.conf` an (Weiterleitung an die App auf `127.0.0.1:3000`, bzw. den nächsten freien Port) und lädt nginx neu – andere Seiten bleiben unberührt,
+- holt das HTTPS-Zertifikat mit `certbot --nginx`, **sobald die Domain auf die IP des Servers zeigt**. Zeigt sie noch woanders hin, nennt das Skript am Ende den Befehl zum späteren Ausführen:
+  ```bash
+  certbot --nginx -d kfz.example.de -m deine@email.de --agree-tos --redirect -n
+  ```
+
 ### Nur über die IP testen (ohne Domain)
 Bei der Frage nach der Domain einfach **Enter** drücken. Die App läuft dann unter `https://SERVER-IP` mit einem eigenen (selbst signierten) Zertifikat:
 - Der Browser zeigt beim ersten Aufruf **„Verbindung ist nicht privat“** → „Erweitert“ → „Weiter zu … (unsicher)“. Das ist im Testbetrieb normal.
@@ -116,7 +124,8 @@ bash /opt/drk-kfz-warte/deploy/update.sh # Backup → neu bauen → Migrationen 
 ## Fehlersuche
 | Problem | Lösung |
 |---|---|
-| Seite lädt nicht / Zertifikatsfehler | DNS zeigt noch nicht auf den Server oder Port 80/443 beim Hoster gesperrt → `docker compose logs caddy` |
+| Seite lädt nicht / Zertifikatsfehler | DNS zeigt noch nicht auf den Server (`dig +short DOMAIN` muss die Server-IP liefern, `curl -4 ifconfig.me` zeigt sie) oder Port 80/443 beim Hoster gesperrt → `docker compose logs caddy` bzw. bei nginx `nginx -t` und `certbot certificates` |
+| `deploy/.env` fehlt | Installation wurde abgebrochen → `bash deploy/install.sh` erneut ausführen |
 | „Anwendung startet nicht“ | `docker compose logs app` – meist falsche Werte in `deploy/.env` |
 | Passwort vergessen / Konto gesperrt | `docker compose exec app npx tsx scripts/reset-password.ts BENUTZERNAME` – zeigt ein neues Passwort an (wird protokolliert) |
 | Server hat wenig RAM, Build bricht ab | Swap anlegen: `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile` |
