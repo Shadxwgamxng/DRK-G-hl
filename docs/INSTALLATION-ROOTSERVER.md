@@ -32,8 +32,8 @@ cd /opt/drk-kfz-warte
 bash deploy/install.sh
 ```
 Das Skript fragt nach:
-1. **Domain** (z. B. `kfz.drk-goehl.de`)
-2. **E-Mail für das Zertifikat** (Ablaufwarnungen von Let's Encrypt)
+1. **Domain** (z. B. `kfz.drk-goehl.de`) – **oder einfach Enter drücken**, um erst nur über die **IP-Adresse** zu testen (siehe unten)
+2. **E-Mail für das Zertifikat** (nur bei Domain; Ablaufwarnungen von Let's Encrypt)
 3. **E-Mail und Benutzername des Administrators**
 4. ob der **Fahrzeugbestand des OV Göhl** (11 Fahrzeuge) gleich importiert werden soll (empfohlen: `J`)
 
@@ -44,6 +44,19 @@ Danach macht es automatisch:
 - richtet Cronjobs ein: **06:15** Erinnerungslauf (HU, Monatskontrollen, Verfall, E-Mails), **02:30** Backup
 
 Am Ende werden **Adresse, Admin-Benutzername und Admin-Passwort** angezeigt – sofort notieren.
+
+### Nur über die IP testen (ohne Domain)
+Bei der Frage nach der Domain einfach **Enter** drücken. Die App läuft dann unter `https://SERVER-IP` mit einem eigenen (selbst signierten) Zertifikat:
+- Der Browser zeigt beim ersten Aufruf **„Verbindung ist nicht privat“** → „Erweitert“ → „Weiter zu … (unsicher)“. Das ist im Testbetrieb normal.
+- Die App-Installation aufs Handy (PWA) und der Offline-Modus funktionieren erst mit echter Domain.
+
+**Später auf Domain umstellen:** DNS-Eintrag anlegen, dann in `deploy/.env` ändern
+```
+DOMAIN="kfz.drk-goehl.de"
+TLS="deine@email.de"
+APP_URL="https://kfz.drk-goehl.de"
+```
+und `cd /opt/drk-kfz-warte/deploy && docker compose up -d` ausführen. Alle Daten bleiben erhalten.
 
 ## 4. Erste Schritte in der App
 1. `https://DEINE-DOMAIN` öffnen und als Administrator anmelden.

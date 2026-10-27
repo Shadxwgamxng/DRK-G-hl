@@ -22,15 +22,23 @@ systemctl enable --now docker >/dev/null 2>&1 || true
 # 2) Konfiguration
 rand() { tr -dc 'A-Za-z0-9' </dev/urandom | head -c "$1"; }
 if [ ! -f .env ]; then
-  read -rp "Domain der App (z. B. kfz.drk-goehl.de): " DOMAIN
-  read -rp "E-Mail für Let's-Encrypt-Zertifikat: " ACME_EMAIL
+  PUBLIC_IP="$(curl -4fsS https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')"
+  echo "Domain (z. B. kfz.drk-goehl.de) eingeben – oder leer lassen, um erst einmal"
+  read -rp "nur über die IP ${PUBLIC_IP} zu testen: " DOMAIN
+  if [ -z "$DOMAIN" ] || [[ "$DOMAIN" =~ ^[0-9.]+$ ]]; then
+    DOMAIN="${DOMAIN:-$PUBLIC_IP}"
+    TLS="internal"
+    echo "-> Test-Betrieb über https://$DOMAIN (eigenes Zertifikat: Browser-Warnung einmal bestätigen)."
+  else
+    read -rp "E-Mail für Let's-Encrypt-Zertifikat: " TLS
+  fi
   read -rp "E-Mail-Adresse des Administrators: " ADMIN_EMAIL
   read -rp "Benutzername des Administrators [admin]: " ADMIN_USER
   ADMIN_USER=${ADMIN_USER:-admin}
   ADMIN_PASS="$(rand 20)"
   cat > .env <<ENV
 DOMAIN="$DOMAIN"
-ACME_EMAIL="$ACME_EMAIL"
+TLS="$TLS"
 APP_URL="https://$DOMAIN"
 POSTGRES_PASSWORD="$(rand 40)"
 SEED_ADMIN_USERNAME="$ADMIN_USER"
@@ -43,7 +51,7 @@ SMTP_HOST=""
 SMTP_PORT=587
 SMTP_USER=""
 SMTP_PASSWORD=""
-SMTP_FROM="KFZ-Warte DRK Göhl <kfz@$DOMAIN>"
+SMTP_FROM="KFZ-Warte DRK Göhl <kfz@example.org>"
 ENV
   chmod 600 .env
   FIRST_INSTALL=1

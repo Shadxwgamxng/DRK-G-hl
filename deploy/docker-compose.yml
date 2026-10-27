@@ -46,7 +46,7 @@ services:
       - app
     environment:
       DOMAIN: ${DOMAIN:?DOMAIN in deploy/.env setzen}
-      ACME_EMAIL: ${ACME_EMAIL:-}
+      TLS: ${TLS:?TLS in deploy/.env setzen (E-Mail für Let's Encrypt oder internal)}
     ports:
       - "80:80"
       - "443:443"

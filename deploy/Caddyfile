@@ -1,9 +1,13 @@
 {
-	email {$ACME_EMAIL}
+	# Browser senden bei Aufruf über eine IP keinen Servernamen mit
+	default_sni {$DOMAIN}
 }
 
-# HTTPS-Zertifikat wird automatisch über Let's Encrypt bezogen und erneuert.
+# HTTPS:
+#  - Domain:  Zertifikat automatisch über Let's Encrypt (TLS = E-Mail-Adresse)
+#  - Nur IP:  eigenes Zertifikat (TLS = internal) → Browser zeigt einmalig eine Warnung
 {$DOMAIN} {
+	tls {$TLS}
 	encode zstd gzip
 	request_body {
 		max_size 20MB
