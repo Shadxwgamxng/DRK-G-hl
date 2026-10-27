@@ -1,0 +1,764 @@
+// DRK Göhl – KFZ-Warte
+// Relationales Datenmodell (PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Benutzer, Rollen, Rechte ─────────────────────────────
+
+enum UserStatus {
+  PENDING // Wartet auf Freigabe
+  ACTIVE
+  REJECTED
+  DISABLED // deaktiviert
+  LOCKED // gesperrt
+}
+
+model User {
+  id                    String     @id @default(cuid())
+  firstName             String
+  lastName              String
+  username              String     @unique
+  email                 String     @unique
+  passwordHash          String
+  position              String? // Funktion / Dienststellung
+  status                UserStatus @default(PENDING)
+  roleId                String
+  role                  Role       @relation(fields: [roleId], references: [id])
+  // Mehrfach-Fahrzeugzuweisung muss ausdrücklich aktiviert werden
+  allowMultipleVehicles Boolean    @default(false)
+  // Reguläre Benutzer dürfen Fahrzeugkontrollen nur durchführen, wenn freigeschaltet
+  canPerformChecks      Boolean    @default(false)
+  emailNotifications    Boolean    @default(true)
+  termsAcceptedAt       DateTime
+  approvedAt            DateTime?
+  approvedById          String?
+  rejectedReason        String?
+  failedLoginCount      Int        @default(0)
+  lockedUntil           DateTime?
+  lastLoginAt           DateTime?
+  anonymizedAt          DateTime?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  sessions             Session[]
+  assignments          VehicleAssignment[]   @relation("AssignedUser")
+  assignmentsMade      VehicleAssignment[]   @relation("AssignedBy")
+  responsibleFor       Vehicle[]             @relation("VehicleResponsible")
+  checks               VehicleCheck[]
+  reportedDefects      Defect[]              @relation("DefectReporter")
+  assignedDefects      Defect[]              @relation("DefectAssignee")
+  resolvedDefects      Defect[]              @relation("DefectResolver")
+  closedDefects        Defect[]              @relation("DefectCloser")
+  defectComments       DefectComment[]
+  attachments          Attachment[]
+  notifications        Notification[]
+  auditLogs            AuditLog[]
+  stockMovements       StockMovement[]
+  refillReported       RefillRequest[]       @relation("RefillReporter")
+  refillProvided       RefillRequest[]       @relation("RefillProvider")
+  refillConfirmed      RefillRequest[]       @relation("RefillConfirmer")
+  inspectionsAssigned  Inspection[]
+  maintenanceRecords   MaintenanceRecord[]
+  vehicleStatusChanges VehicleStatusChange[]
+
+  @@index([status])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  key         String           @unique // ADMIN, FLEET_MANAGER, USER, WAREHOUSE, …
+  name        String
+  description String?
+  isSystem    Boolean          @default(false)
+  users       User[]
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model Session {
+  id         String   @id // SHA-256-Hash des Tokens, Token selbst wird nie gespeichert
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  userAgent  String?
+  ip         String?
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ───────────────────────────── Fahrzeuge ─────────────────────────────
+
+enum VehicleStatus {
+  READY // Einsatzbereit
+  LIMITED // Eingeschränkt einsatzbereit
+  NOT_READY // Nicht einsatzbereit
+  OUT_OF_SERVICE // Außer Dienst
+}
+
+model VehicleType {
+  id          String      @id @default(cuid())
+  name        String      @unique // RTW, KTW, MTW, GW, …
+  description String?
+  archived    Boolean     @default(false)
+  vehicles    Vehicle[]
+  checklists  Checklist[]
+  createdAt   DateTime    @default(now())
+}
+
+model Vehicle {
+  id                String        @id @default(cuid())
+  name              String
+  radioCallSign     String?
+  internalNumber    String        @unique
+  licensePlate      String        @unique
+  typeId            String
+  type              VehicleType   @relation(fields: [typeId], references: [id])
+  manufacturer      String?
+  model             String?
+  buildYear         Int?
+  firstRegistration DateTime?     @db.Date
+  mileage           Int?
+  location          String?
+  responsibleUserId String?
+  responsibleUser   User?         @relation("VehicleResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  status            VehicleStatus @default(READY)
+  statusReason      String?
+  statusChangedAt   DateTime?
+  remarks           String?
+  // Intervall der regelmäßigen Fahrzeugkontrolle in Tagen
+  checkIntervalDays Int           @default(7)
+  imageId           String?       @unique
+  image             Attachment?   @relation("VehicleImage", fields: [imageId], references: [id], onDelete: SetNull)
+  archivedAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  assignments    VehicleAssignment[]
+  checks         VehicleCheck[]
+  inspections    Inspection[]
+  maintenance    MaintenanceRecord[]
+  stocks         VehicleMaterialStock[]
+  refillRequests RefillRequest[]
+  defects        Defect[]
+  attachments    Attachment[]           @relation("VehicleAttachments")
+  statusChanges  VehicleStatusChange[]
+
+  @@index([status])
+  @@index([typeId])
+  @@index([archivedAt])
+}
+
+model VehicleStatusChange {
+  id         String        @id @default(cuid())
+  vehicleId  String
+  vehicle    Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  fromStatus VehicleStatus
+  toStatus   VehicleStatus
+  reason     String?
+  userId     String
+  user       User          @relation(fields: [userId], references: [id])
+  createdAt  DateTime      @default(now())
+
+  @@index([vehicleId, createdAt])
+}
+
+model VehicleAssignment {
+  id           String   @id @default(cuid())
+  userId       String
+  vehicleId    String
+  user         User     @relation("AssignedUser", fields: [userId], references: [id], onDelete: Cascade)
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  assignedById String?
+  assignedBy   User?    @relation("AssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+  assignedAt   DateTime @default(now())
+
+  @@unique([userId, vehicleId])
+  @@index([vehicleId])
+}
+
+// ───────────────────────────── Fahrzeugkontrollen ─────────────────────────────
+
+model Checklist {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?
+  // null = Standard-Checkliste für alle Fahrzeugtypen ohne eigene Liste
+  vehicleTypeId String?
+  vehicleType   VehicleType?    @relation(fields: [vehicleTypeId], references: [id], onDelete: SetNull)
+  active        Boolean         @default(true)
+  items         ChecklistItem[]
+  checks        VehicleCheck[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([vehicleTypeId])
+}
+
+model ChecklistItem {
+  id          String               @id @default(cuid())
+  checklistId String
+  checklist   Checklist            @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  label       String
+  description String?
+  sortOrder   Int                  @default(0)
+  active      Boolean              @default(true)
+  results     VehicleCheckResult[]
+
+  @@index([checklistId, sortOrder])
+}
+
+enum CheckType {
+  ROUTINE // Regelmäßige Kontrolle
+  SHIFT_START // Schichtbeginn / Dienstübernahme
+  AFTER_MISSION // Nach Einsatz
+  EXTENDED // Erweiterte Kontrolle
+  OTHER
+}
+
+enum CheckOutcome {
+  OK // Ohne Befund
+  DEFECTS // Mängel festgestellt
+}
+
+model VehicleCheck {
+  id               String               @id @default(cuid())
+  vehicleId        String
+  vehicle          Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  checklistId      String?
+  checklist        Checklist?           @relation(fields: [checklistId], references: [id], onDelete: SetNull)
+  checklistName    String // Momentaufnahme
+  checkType        CheckType            @default(ROUTINE)
+  performedById    String
+  performedBy      User                 @relation(fields: [performedById], references: [id])
+  performedAt      DateTime
+  mileage          Int?
+  remarks          String?
+  outcome          CheckOutcome
+  // Revisionssicherheit: abgeschlossene Kontrollen sind unveränderlich, Ergänzungen nur als Nachtrag
+  completedAt      DateTime             @default(now())
+  amendments       Json                 @default("[]")
+  // Offline-Synchronisation: Idempotenz-Schlüssel des Geräts
+  clientRef        String?              @unique
+  offlineCreatedAt DateTime?
+  results          VehicleCheckResult[]
+  attachments      Attachment[]
+  defects          Defect[]
+
+  @@index([vehicleId, performedAt])
+}
+
+enum CheckResultValue {
+  OK
+  DEFECT
+  NOT_APPLICABLE
+}
+
+model VehicleCheckResult {
+  id              String           @id @default(cuid())
+  checkId         String
+  check           VehicleCheck     @relation(fields: [checkId], references: [id], onDelete: Cascade)
+  checklistItemId String?
+  checklistItem   ChecklistItem?   @relation(fields: [checklistItemId], references: [id], onDelete: SetNull)
+  label           String // Momentaufnahme des Prüfpunkts
+  sortOrder       Int              @default(0)
+  result          CheckResultValue
+  note            String?
+
+  @@index([checkId])
+}
+
+// ───────────────────────────── Prüfungen & Wartung ─────────────────────────────
+
+enum IntervalUnit {
+  DAYS
+  MONTHS
+  YEARS
+}
+
+model InspectionType {
+  id                   String        @id @default(cuid())
+  // Systemschlüssel für Auswertungen (z. B. "HU"); frei angelegte Typen haben keinen Schlüssel
+  key                  String?       @unique
+  name                 String        @unique // HU, SP, Inspektion, Ölwechsel, …
+  description          String?
+  defaultIntervalValue Int?
+  defaultIntervalUnit  IntervalUnit?
+  defaultReminderDays  Int[]         @default([30, 14, 7])
+  archived             Boolean       @default(false)
+  inspections          Inspection[]
+}
+
+model Inspection {
+  id            String              @id @default(cuid())
+  vehicleId     String
+  vehicle       Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  typeId        String
+  type          InspectionType      @relation(fields: [typeId], references: [id])
+  title         String
+  dueDate       DateTime            @db.Date
+  lastDate      DateTime?           @db.Date
+  intervalValue Int?
+  intervalUnit  IntervalUnit?
+  assignedToId  String?
+  assignedTo    User?               @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  workshop      String?
+  estimatedCost Decimal?            @db.Decimal(10, 2)
+  remarks       String?
+  reminderDays  Int[]               @default([30, 14, 7])
+  active        Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  records       MaintenanceRecord[]
+  attachments   Attachment[]
+
+  @@index([vehicleId, dueDate])
+  @@index([dueDate])
+}
+
+model MaintenanceRecord {
+  id           String       @id @default(cuid())
+  vehicleId    String
+  vehicle      Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  inspectionId String?
+  inspection   Inspection?  @relation(fields: [inspectionId], references: [id], onDelete: SetNull)
+  title        String
+  performedAt  DateTime     @db.Date
+  performedBy  String? // ausführende Person / Prüfer
+  workshop     String?
+  cost         Decimal?     @db.Decimal(10, 2)
+  mileage      Int?
+  passed       Boolean      @default(true)
+  remarks      String?
+  createdById  String
+  createdBy    User         @relation(fields: [createdById], references: [id])
+  createdAt    DateTime     @default(now())
+  attachments  Attachment[]
+
+  @@index([vehicleId, performedAt])
+}
+
+// ───────────────────────────── Material & Lager ─────────────────────────────
+
+model MaterialCategory {
+  id           String     @id @default(cuid())
+  name         String     @unique
+  sortOrder    Int        @default(0)
+  // Medikamente nur, wenn in den Einstellungen ausdrücklich freigeschaltet
+  isMedication Boolean    @default(false)
+  materials    Material[]
+}
+
+model Material {
+  id              String                 @id @default(cuid())
+  name            String
+  articleNumber   String?
+  categoryId      String
+  category        MaterialCategory       @relation(fields: [categoryId], references: [id])
+  description     String?
+  unit            String                 @default("Stück")
+  manufacturer    String?
+  // true = Bestand wird chargenweise mit Verfallsdaten geführt
+  batchTracked    Boolean                @default(false)
+  remarks         String?
+  archived        Boolean                @default(false)
+  imageId         String?                @unique
+  image           Attachment?            @relation("MaterialImage", fields: [imageId], references: [id], onDelete: SetNull)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  vehicleStocks   VehicleMaterialStock[]
+  warehouseStocks WarehouseStock[]
+  batches         MaterialBatch[]
+  movements       StockMovement[]
+  refillRequests  RefillRequest[]
+
+  @@unique([name, articleNumber])
+  @@index([categoryId])
+}
+
+model VehicleMaterialStock {
+  id               String           @id @default(cuid())
+  vehicleId        String
+  vehicle          Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  materialId       String
+  material         Material         @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  targetQuantity   Int // Sollbestand
+  minQuantity      Int              @default(0) // Mindestbestand
+  currentQuantity  Int              @default(0) // = Summe der Chargen bei chargengeführten Materialien
+  compartment      String? // Fach / Schrank / Tasche im Fahrzeug
+  // Externer Lagerort für Nachfüllmaterial
+  refillLocationId String?
+  refillLocation   StorageLocation? @relation(fields: [refillLocationId], references: [id], onDelete: SetNull)
+  remarks          String?
+  lastCheckedAt    DateTime?
+  active           Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  batches          MaterialBatch[]
+  movementsOut     StockMovement[]  @relation("MovementFromVehicle")
+  movementsIn      StockMovement[]  @relation("MovementToVehicle")
+  refillRequests   RefillRequest[]
+
+  @@unique([vehicleId, materialId])
+  @@index([materialId])
+}
+
+model Warehouse {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  description String?
+  locations   StorageLocation[]
+  createdAt   DateTime          @default(now())
+}
+
+model StorageLocation {
+  id            String                 @id @default(cuid())
+  warehouseId   String
+  warehouse     Warehouse              @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  name          String // z. B. „Regal 3, Fach B“
+  code          String?
+  description   String?
+  archived      Boolean                @default(false)
+  stocks        WarehouseStock[]
+  vehicleRefill VehicleMaterialStock[]
+
+  @@unique([warehouseId, name])
+}
+
+model WarehouseStock {
+  id           String          @id @default(cuid())
+  materialId   String
+  material     Material        @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  locationId   String
+  location     StorageLocation @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  quantity     Int             @default(0)
+  minQuantity  Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  batches      MaterialBatch[]
+  movementsOut StockMovement[] @relation("MovementFromWarehouse")
+  movementsIn  StockMovement[] @relation("MovementToWarehouse")
+
+  @@unique([materialId, locationId])
+}
+
+// Eine Charge gehört genau EINEM Bestand (Fahrzeug ODER Lager) – per CHECK-Constraint abgesichert
+model MaterialBatch {
+  id               String                @id @default(cuid())
+  materialId       String
+  material         Material              @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  vehicleStockId   String?
+  vehicleStock     VehicleMaterialStock? @relation(fields: [vehicleStockId], references: [id], onDelete: Restrict)
+  warehouseStockId String?
+  warehouseStock   WarehouseStock?       @relation(fields: [warehouseStockId], references: [id], onDelete: Restrict)
+  batchNumber      String?
+  expiryDate       DateTime?             @db.Date
+  quantity         Int                   @default(0)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  movements        StockMovement[]
+
+  @@index([vehicleStockId])
+  @@index([warehouseStockId])
+  @@index([expiryDate])
+}
+
+enum MovementType {
+  RECEIPT // Zugang ins Lager
+  ISSUE // Entnahme aus dem Lager (ohne Fahrzeug)
+  WRITE_OFF // Austragen (abgelaufen, verbraucht, beschädigt, verloren …)
+  PROVISION // Bereitstellung aus dem Lager für ein Fahrzeug
+  REFILL // Nachfüllung ins Fahrzeug
+  RETURN // Rückgabe nicht verwendeter Bereitstellung ins Lager
+  CORRECTION // Inventurkorrektur
+}
+
+enum MovementReason {
+  EXPIRED
+  USED
+  DAMAGED
+  LOST
+  OTHER
+}
+
+// Jede Bestandsänderung wird als unveränderliche Bewegung gespeichert
+model StockMovement {
+  id                   String                @id @default(cuid())
+  type                 MovementType
+  reason               MovementReason?
+  materialId           String
+  material             Material              @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  // vorzeichenbehaftete Mengenänderung bezogen auf den Bestand (Quelle negativ / Ziel positiv)
+  quantity             Int
+  fromVehicleStockId   String?
+  fromVehicleStock     VehicleMaterialStock? @relation("MovementFromVehicle", fields: [fromVehicleStockId], references: [id], onDelete: Restrict)
+  toVehicleStockId     String?
+  toVehicleStock       VehicleMaterialStock? @relation("MovementToVehicle", fields: [toVehicleStockId], references: [id], onDelete: Restrict)
+  fromWarehouseStockId String?
+  fromWarehouseStock   WarehouseStock?       @relation("MovementFromWarehouse", fields: [fromWarehouseStockId], references: [id], onDelete: Restrict)
+  toWarehouseStockId   String?
+  toWarehouseStock     WarehouseStock?       @relation("MovementToWarehouse", fields: [toWarehouseStockId], references: [id], onDelete: Restrict)
+  batchId              String?
+  batch                MaterialBatch?        @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  batchNumber          String?
+  expiryDate           DateTime?             @db.Date
+  occurredAt           DateTime              @default(now())
+  note                 String?
+  userId               String
+  user                 User                  @relation(fields: [userId], references: [id])
+  refillRequestId      String?
+  refillRequest        RefillRequest?        @relation(fields: [refillRequestId], references: [id], onDelete: Restrict)
+  clientRef            String?               @unique
+  createdAt            DateTime              @default(now())
+  attachments          Attachment[]
+
+  @@index([materialId, createdAt])
+  @@index([fromVehicleStockId])
+  @@index([toVehicleStockId])
+  @@index([refillRequestId])
+}
+
+enum RefillStatus {
+  OPEN // Offen
+  IN_PROGRESS // In Bearbeitung
+  PROVIDED // Material bereitgestellt
+  REFILLED // Nachgefüllt (Menge bestätigt, Bestand gebucht)
+  DONE // Erledigt
+  CANCELLED // Storniert
+}
+
+model RefillRequest {
+  id                String               @id @default(cuid())
+  vehicleId         String
+  vehicle           Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  vehicleStockId    String
+  vehicleStock      VehicleMaterialStock @relation(fields: [vehicleStockId], references: [id], onDelete: Restrict)
+  materialId        String
+  material          Material             @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  requestedQuantity Int
+  reason            String
+  status            RefillStatus         @default(OPEN)
+  reportedById      String
+  reportedBy        User                 @relation("RefillReporter", fields: [reportedById], references: [id])
+  providedQuantity  Int?
+  providedById      String?
+  providedBy        User?                @relation("RefillProvider", fields: [providedById], references: [id])
+  providedAt        DateTime?
+  refilledQuantity  Int?
+  confirmedById     String?
+  confirmedBy       User?                @relation("RefillConfirmer", fields: [confirmedById], references: [id])
+  confirmedAt       DateTime?
+  closedAt          DateTime?
+  notes             String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  movements         StockMovement[]
+
+  // Zusätzlich partieller Unique-Index (Migration): höchstens EINE aktive Anforderung je Fahrzeugbestand
+  @@index([status])
+  @@index([vehicleId, status])
+}
+
+// ───────────────────────────── Mängel ─────────────────────────────
+
+enum DefectCategory {
+  VEHICLE_TECH
+  BODY
+  ELECTRICAL
+  TIRES
+  MEDICAL_DEVICES
+  MATERIAL
+  HYGIENE
+  EQUIPMENT
+  OTHER
+}
+
+enum DefectSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DefectStatus {
+  NEW // Neu gemeldet
+  REVIEWED // Geprüft
+  IN_PROGRESS // In Bearbeitung
+  WAITING_PARTS // Wartet auf Ersatzteil
+  RESOLVED // Behoben
+  CLOSED // Kontrolliert und abgeschlossen
+}
+
+model Defect {
+  id               String          @id @default(cuid())
+  vehicleId        String
+  vehicle          Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  title            String
+  description      String
+  category         DefectCategory
+  severity         DefectSeverity
+  status           DefectStatus    @default(NEW)
+  reportedAt       DateTime        @default(now())
+  reportedById     String
+  reportedBy       User            @relation("DefectReporter", fields: [reportedById], references: [id])
+  mileage          Int?
+  assignedToId     String?
+  assignedTo       User?           @relation("DefectAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  dueDate          DateTime?       @db.Date
+  // Meldender gibt an, dass die Einsatzfähigkeit fraglich ist
+  affectsReadiness Boolean         @default(false)
+  measures         String?
+  resolvedAt       DateTime?
+  resolvedById     String?
+  resolvedBy       User?           @relation("DefectResolver", fields: [resolvedById], references: [id])
+  closedAt         DateTime?
+  closedById       String?
+  closedBy         User?           @relation("DefectCloser", fields: [closedById], references: [id])
+  vehicleCheckId   String?
+  vehicleCheck     VehicleCheck?   @relation(fields: [vehicleCheckId], references: [id], onDelete: SetNull)
+  checkItemLabel   String?
+  clientRef        String?         @unique
+  offlineCreatedAt DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  comments         DefectComment[]
+  attachments      Attachment[]
+
+  @@index([vehicleId, status])
+  @@index([severity, status])
+}
+
+enum CommentKind {
+  COMMENT
+  STATUS_CHANGE
+  MEASURE
+  ASSIGNMENT
+}
+
+model DefectComment {
+  id        String      @id @default(cuid())
+  defectId  String
+  defect    Defect      @relation(fields: [defectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  kind      CommentKind @default(COMMENT)
+  text      String
+  createdAt DateTime    @default(now())
+
+  @@index([defectId, createdAt])
+}
+
+// ───────────────────────────── Anhänge ─────────────────────────────
+
+enum AttachmentKind {
+  PHOTO
+  DOCUMENT
+}
+
+// Dateien liegen privat außerhalb des Webroots und werden nur über /api/files/:id
+// nach Berechtigungsprüfung ausgeliefert. Ein Anhang ist höchstens einem Datensatz zugeordnet.
+model Attachment {
+  id                  String             @id @default(cuid())
+  storageKey          String             @unique
+  originalName        String
+  mimeType            String
+  size                Int
+  kind                AttachmentKind
+  uploadedById        String
+  uploadedBy          User               @relation(fields: [uploadedById], references: [id])
+  createdAt           DateTime           @default(now())
+  vehicleId           String?
+  vehicle             Vehicle?           @relation("VehicleAttachments", fields: [vehicleId], references: [id], onDelete: Cascade)
+  defectId            String?
+  defect              Defect?            @relation(fields: [defectId], references: [id], onDelete: Cascade)
+  vehicleCheckId      String?
+  vehicleCheck        VehicleCheck?      @relation(fields: [vehicleCheckId], references: [id], onDelete: Cascade)
+  inspectionId        String?
+  inspection          Inspection?        @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  maintenanceRecordId String?
+  maintenanceRecord   MaintenanceRecord? @relation(fields: [maintenanceRecordId], references: [id], onDelete: Cascade)
+  stockMovementId     String?
+  stockMovement       StockMovement?     @relation(fields: [stockMovementId], references: [id], onDelete: Cascade)
+  vehicleImageOf      Vehicle?           @relation("VehicleImage")
+  materialImageOf     Material?          @relation("MaterialImage")
+
+  @@index([vehicleId])
+  @@index([defectId])
+  @@index([vehicleCheckId])
+  @@index([inspectionId])
+  @@index([maintenanceRecordId])
+  @@index([stockMovementId])
+  @@index([uploadedById, createdAt])
+}
+
+// ───────────────────────────── Benachrichtigungen & Protokoll ─────────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String?
+  link      String?
+  // verhindert Mehrfachbenachrichtigungen zum selben Anlass
+  dedupeKey String?
+  readAt    DateTime?
+  emailedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt, createdAt])
+}
+
+// Unveränderliches Änderungsprotokoll (UPDATE/DELETE per Trigger gesperrt)
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  action     String
+  entityType String
+  entityId   String?
+  vehicleId  String?
+  oldValues  Json?
+  newValues  Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([vehicleId, createdAt])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
