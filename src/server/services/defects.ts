@@ -29,6 +29,9 @@ export const defectInputSchema = z.object({
   clientRef: z.preprocess((v) => (v === "" ? undefined : v), z.string().uuid().optional()),
 });
 
+/** Erfassungen, die später als 2 Minuten eintreffen, gelten als offline erfasst. */
+export const OFFLINE_THRESHOLD_MS = 2 * 60 * 1000;
+
 export type DefectInput = z.infer<typeof defectInputSchema>;
 
 /** Gemeinsame Anlage-Logik (auch aus Fahrzeugkontrollen heraus) – läuft in einer Transaktion. */
@@ -96,7 +99,7 @@ export async function createDefect(actor: Actor, input: unknown, attachmentIds?:
       return { defect: existing, readinessWarning: false, duplicate: true };
     }
   }
-  const res = await db.$transaction((tx) => createDefectTx(tx, actor, d, { attachmentIds, offline: Boolean(d.clientRef && d.reportedAt) }));
+  const res = await db.$transaction((tx) => createDefectTx(tx, actor, d, { attachmentIds, offline: Boolean(d.clientRef && d.reportedAt && Date.now() - d.reportedAt.getTime() > OFFLINE_THRESHOLD_MS) }));
   return { ...res, duplicate: false };
 }
 

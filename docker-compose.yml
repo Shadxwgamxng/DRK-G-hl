@@ -1,0 +1,34 @@
+# Produktionsbeispiel: App + PostgreSQL. Vor dem Start .env anlegen (siehe .env.example).
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: drk_kfz
+      POSTGRES_USER: drk
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD setzen}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U drk -d drk_kfz"]
+      interval: 10s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://drk:${POSTGRES_PASSWORD}@db:5432/drk_kfz?schema=public
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - uploads:/data/uploads
+    ports:
+      - "127.0.0.1:3000:3000" # nur lokal; davor TLS-Reverse-Proxy (Caddy/nginx)
+
+volumes:
+  pgdata:
+  uploads:

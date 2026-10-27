@@ -9,7 +9,7 @@ import { conflict, invalid, notFound } from "../errors";
 import { notify, recipientsFor } from "../notifications";
 import { parse } from "../validate";
 import { linkAttachments } from "./attachments";
-import { createDefectTx, DEFECT_CATEGORIES, DEFECT_SEVERITIES } from "./defects";
+import { createDefectTx, DEFECT_CATEGORIES, DEFECT_SEVERITIES, OFFLINE_THRESHOLD_MS } from "./defects";
 
 export const CHECK_TYPES = ["ROUTINE", "SHIFT_START", "AFTER_MISSION", "EXTENDED", "OTHER"] as const;
 
@@ -99,7 +99,7 @@ export async function performCheck(actor: Actor, vehicleId: string, input: unkno
         remarks: d.remarks,
         outcome,
         clientRef: d.clientRef,
-        offlineCreatedAt: d.clientRef && d.performedAt ? performedAt : null,
+        offlineCreatedAt: d.clientRef && d.performedAt && now.getTime() - performedAt.getTime() > OFFLINE_THRESHOLD_MS ? performedAt : null,
         results: {
           create: checklist.items.map((item) => {
             const r = answered.get(item.id)!;
