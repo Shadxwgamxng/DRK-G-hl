@@ -9,7 +9,7 @@ import { ACTIVE_REFILL_STATUSES, OPEN_DEFECT_STATUSES } from "@/lib/labels";
 import { unreadNotificationCount } from "@/server/services/admin";
 import { BottomNav, LogoutButton, Sidebar, type NavItem } from "./nav";
 import { SyncIndicator } from "./pwa";
-import { RedCross } from "./brand";
+import { DrkLogo } from "./brand";
 import { SyncRunner } from "./sync";
 
 export async function AppShell({ actor, children }: { actor: Actor; children: React.ReactNode }) {
@@ -43,8 +43,8 @@ export async function AppShell({ actor, children }: { actor: Actor; children: Re
 
   const footer = (
     <div>
-      <div className="mb-2 px-3 text-xs text-gray-400">
-        <p className="truncate font-semibold text-gray-200">
+      <div className="mb-2 px-3 text-xs text-gray-600">
+        <p className="truncate font-bold text-drkblue-900">
           {actor.firstName} {actor.lastName}
         </p>
         <p className="truncate">{actor.roleName}</p>
@@ -59,24 +59,27 @@ export async function AppShell({ actor, children }: { actor: Actor; children: Re
         Zum Inhalt springen
       </a>
       <Sidebar items={items} footer={footer} />
-      <div className="lg:pl-64">
+      <div className="lg:pl-80">
         {settings.demoMode && (
-          <div className="bg-amber-400 px-4 py-1.5 text-center text-sm font-bold text-anthracite-900" role="status">
+          <div className="bg-drkblue-900 px-4 py-1.5 text-center text-sm font-bold text-white" role="status">
             DEMO-MODUS – Beispieldaten, keine echten Einsatzdaten
           </div>
         )}
-        <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        {/* Mobil: Wort-Bild-Marke auf Weiß in Mindesthöhe (scrollt weg), darunter die fixierte Suchleiste */}
+        <div className="border-b border-gray-300 bg-white px-4 pb-3 lg:hidden" style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}>
+          <Link href="/" aria-label="Zur Übersicht" className="inline-block">
+            <DrkLogo className="h-[60px] w-auto" priority />
+          </Link>
+        </div>
+        <header className="sticky top-0 z-20 border-b border-gray-300 bg-white" style={{ paddingTop: "env(safe-area-inset-top)" }}>
           <div className="flex items-center gap-2 px-4 py-2 sm:px-6">
-            <Link href="/" className="mr-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white lg:hidden" aria-label="Zur Übersicht">
-              <RedCross className="h-6 w-6" />
-            </Link>
             <form action="/suche" className="relative min-w-0 flex-1" role="search">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" aria-hidden />
               <input type="search" name="q" placeholder="Suche: Fahrzeug, Material, Mangel, Charge …" aria-label="Globale Suche" className="input min-h-11 pl-10" />
             </form>
             <SyncIndicator userId={actor.id} />
-            <Link href="/benachrichtigungen" className="focus-ring relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-gray-100" aria-label={`Benachrichtigungen${unread ? ` (${unread} ungelesen)` : ""}`}>
-              <Bell className="h-6 w-6 text-anthracite-800" aria-hidden />
+            <Link href="/benachrichtigungen" className="focus-ring relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-drkblue-50" aria-label={`Benachrichtigungen${unread ? ` (${unread} ungelesen)` : ""}`}>
+              <Bell className="h-6 w-6 text-drkblue-900" aria-hidden />
               {unread > 0 && <span className="absolute right-1 top-1 min-w-5 rounded-full bg-drk-500 px-1 text-center text-[11px] font-bold text-white">{unread > 99 ? "99+" : unread}</span>}
             </Link>
           </div>

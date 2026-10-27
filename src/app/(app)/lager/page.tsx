@@ -31,7 +31,7 @@ export default async function WarehousePage({ searchParams }: { searchParams: Pr
           </>
         }
       />
-      <form className="card mb-4 grid gap-3 p-3 sm:grid-cols-5">
+      <form className="filterbar mb-4 grid gap-3 p-3 sm:grid-cols-5">
         <input name="q" defaultValue={sp.q} placeholder="Material suchen" className="input" aria-label="Suche" />
         <select name="locationId" defaultValue={sp.locationId ?? ""} className="input" aria-label="Lagerort">
           <option value="">Alle Lagerorte</option>
@@ -46,7 +46,7 @@ export default async function WarehousePage({ searchParams }: { searchParams: Pr
           <option value="low">Unter Mindestbestand</option>
           <option value="expiring">Abgelaufen / bald ablaufend</option>
         </select>
-        <button className="min-h-12 rounded-lg bg-anthracite-800 px-4 text-sm font-semibold text-white">Filtern</button>
+        <button className="min-h-12 rounded-lg bg-drkblue-900 px-4 text-sm font-semibold text-white hover:bg-drkblue-600">Filtern</button>
       </form>
 
       <Card padded={stocks.length === 0} className="mb-5">

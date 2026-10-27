@@ -146,7 +146,7 @@ export function AttachmentGallery({ items }: { items: { id: string; originalName
                 <FileText className="h-10 w-10" aria-hidden />
               </div>
             )}
-            <p className="truncate p-1.5 text-xs font-medium text-anthracite-800">{a.originalName}</p>
+            <p className="truncate p-1.5 text-xs font-medium text-gray-700">{a.originalName}</p>
           </a>
         </li>
       ))}

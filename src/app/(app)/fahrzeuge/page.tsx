@@ -38,7 +38,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
           </LinkButton>
         )}
       />
-      <form className="card mb-4 grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-5" role="search">
+      <form className="filterbar mb-4 grid gap-3 p-3 sm:grid-cols-2 lg:grid-cols-5" role="search">
         <input name="q" defaultValue={sp.q} placeholder="Name, Kennzeichen, Funkrufname" className="input lg:col-span-2" aria-label="Suche" />
         <select name="status" defaultValue={sp.status ?? ""} className="input" aria-label="Status">
           <option value="">Alle Status</option>
@@ -58,7 +58,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
         </select>
         <input type="hidden" name="ansicht" value={view} />
         <div className="flex gap-2">
-          <button className="min-h-12 flex-1 rounded-lg bg-anthracite-800 px-4 text-sm font-semibold text-white">Filtern</button>
+          <button className="min-h-12 flex-1 rounded-lg bg-drkblue-900 px-4 text-sm font-semibold text-white hover:bg-drkblue-600">Filtern</button>
           <Link href="/fahrzeuge" className="flex min-h-12 items-center rounded-lg px-3 text-sm font-semibold text-gray-600 hover:bg-gray-100">
             Zurücksetzen
           </Link>
@@ -66,10 +66,10 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
       </form>
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
         <span className="text-gray-600">Ansicht:</span>
-        <Link href={qs({ ansicht: "karten" })} className={`rounded-lg px-3 py-2 font-semibold ${view === "karten" ? "bg-anthracite-800 text-white" : "bg-white"}`}>
+        <Link href={qs({ ansicht: "karten" })} className={`rounded-lg px-3 py-2 font-semibold ${view === "karten" ? "bg-drkblue-900 text-white" : "bg-white"}`}>
           Karten
         </Link>
-        <Link href={qs({ ansicht: "tabelle" })} className={`rounded-lg px-3 py-2 font-semibold ${view === "tabelle" ? "bg-anthracite-800 text-white" : "bg-white"}`}>
+        <Link href={qs({ ansicht: "tabelle" })} className={`rounded-lg px-3 py-2 font-semibold ${view === "tabelle" ? "bg-drkblue-900 text-white" : "bg-white"}`}>
           Tabelle
         </Link>
         {can(actor, "vehicles.manage") && (
@@ -106,7 +106,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                 {vehicles.map((v) => (
                   <tr key={v.id}>
                     <td>
-                      <Link href={`/fahrzeuge/${v.id}`} className="font-semibold hover:text-drk-600">
+                      <Link href={`/fahrzeuge/${v.id}`} className="font-semibold hover:text-drkblue-600">
                         {v.name}
                       </Link>
                       <div className="text-xs text-gray-500">

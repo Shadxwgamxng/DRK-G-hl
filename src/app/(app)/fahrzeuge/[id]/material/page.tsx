@@ -36,7 +36,7 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
           <option value="expired">Abgelaufen</option>
           <option value="expiring">Abgelaufen oder bald ablaufend</option>
         </select>
-        <button className="min-h-12 rounded-lg bg-anthracite-800 px-4 text-sm font-semibold text-white">Filtern</button>
+        <button className="min-h-12 rounded-lg bg-drkblue-900 px-4 text-sm font-semibold text-white hover:bg-drkblue-600">Filtern</button>
       </form>
 
       {stocks.length === 0 ? (
@@ -55,7 +55,7 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
                   {list.map((s) => (
                     <tr key={s.id}>
                       <td>
-                        <Link href={`/fahrzeuge/${id}/material/${s.id}`} className="font-semibold hover:text-drk-600">{s.material.name}</Link>
+                        <Link href={`/fahrzeuge/${id}/material/${s.id}`} className="font-semibold hover:text-drkblue-600">{s.material.name}</Link>
                         {s.material.articleNumber && <div className="text-xs text-gray-500">Art.-Nr. {s.material.articleNumber}</div>}
                       </td>
                       <td>{s.compartment ?? "–"}</td>

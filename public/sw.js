@@ -4,7 +4,7 @@
  *   Offline-Anzeige vorgehalten (network-first). Beim Abmelden wird dieser Cache gelöscht.
  * - API-Aufrufe und Dateien (Fotos/Dokumente) werden NIE im Cache abgelegt.
  */
-const STATIC = "drk-static-v2";
+const STATIC = "drk-static-v3";
 const PAGES = "drk-pages";
 const OFFLINE_URL = "/offline";
 const PAGE_ALLOW = [/^\/$/, /^\/fahrzeuge(\/[^/]+)?$/, /^\/fahrzeuge\/[^/]+\/(kontrolle|material)$/, /^\/maengel\/neu$/, /^\/sync$/];

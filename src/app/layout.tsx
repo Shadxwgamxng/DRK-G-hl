@@ -1,4 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource/open-sans/400.css";
+import "@fontsource/open-sans/600.css";
+import "@fontsource/open-sans/700.css";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/pwa";
 
@@ -13,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#e3000b",
+  themeColor: "#e60005",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

@@ -80,7 +80,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   {d.checksDue.map((v) => (
                     <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                       <div>
-                        <Link href={`/fahrzeuge/${v.id}`} className="font-semibold hover:text-drk-600">
+                        <Link href={`/fahrzeuge/${v.id}`} className="font-semibold hover:text-drkblue-600">
                           {v.name}
                         </Link>
                         <p className="text-xs text-gray-500">{v.lastCheck ? `Zuletzt ${fmtDate(v.lastCheck.performedAt)} (${v.lastCheck.performedBy.firstName} ${v.lastCheck.performedBy.lastName})` : "Noch nie kontrolliert"}</p>
@@ -96,7 +96,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               )}
             </Card>
             {can(actor, "inspections.view") && (
-              <Card title="Anstehende HU-, Prüf- und Wartungstermine" actions={<Link href="/termine" className="text-sm font-semibold text-drk-600">Alle</Link>}>
+              <Card title="Anstehende HU-, Prüf- und Wartungstermine" actions={<Link href="/termine" className="text-sm font-bold text-drkblue-700 hover:text-drkblue-600">Alle</Link>}>
                 {d.upcomingInspections.length === 0 ? (
                   <p className="text-sm text-gray-600">Keine Termine in den nächsten 30 Tagen.</p>
                 ) : (
@@ -104,7 +104,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                     {d.upcomingInspections.map((i) => (
                       <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                         <div>
-                          <Link href={`/termine/${i.id}`} className="font-semibold hover:text-drk-600">
+                          <Link href={`/termine/${i.id}`} className="font-semibold hover:text-drkblue-600">
                             {i.title}
                           </Link>
                           <p className="text-xs text-gray-500">{i.vehicle.name}</p>

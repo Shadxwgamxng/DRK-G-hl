@@ -38,13 +38,13 @@ export default async function MaterialCatalogPage({ searchParams }: { searchPara
     <>
       <PageHeader title="Materialkatalog" subtitle="Zentrale Artikelliste für Fahrzeuge und Lager" />
       {!settings.medicationsEnabled && <Alert tone="info" className="mb-4" title="Die Medikamentenverwaltung ist nicht freigeschaltet (Einstellungen)." />}
-      <form className="card mb-4 grid gap-3 p-3 sm:grid-cols-4">
+      <form className="filterbar mb-4 grid gap-3 p-3 sm:grid-cols-4">
         <input name="q" defaultValue={sp.q} placeholder="Name oder Artikelnummer" className="input sm:col-span-2" aria-label="Suche" />
         <select name="categoryId" defaultValue={sp.categoryId ?? ""} className="input" aria-label="Kategorie">
           <option value="">Alle Kategorien</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <button className="min-h-12 rounded-lg bg-anthracite-800 px-4 text-sm font-semibold text-white">Filtern</button>
+        <button className="min-h-12 rounded-lg bg-drkblue-900 px-4 text-sm font-semibold text-white hover:bg-drkblue-600">Filtern</button>
       </form>
       <Card title="Neues Material" className="mb-5">
         <ActionForm action={upsertMaterialAction.bind(null, null)} resetOnSuccess>

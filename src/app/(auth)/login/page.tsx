@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       </ActionForm>
       <p className="mt-6 text-center text-sm text-gray-600">
         Noch kein Konto?{" "}
-        <Link href="/registrieren" className="font-semibold text-drk-600 underline">
+        <Link href="/registrieren" className="font-bold text-drkblue-700 hover:text-drkblue-600 underline">
           Jetzt registrieren
         </Link>
       </p>

@@ -16,7 +16,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader title="Änderungsprotokoll" subtitle="Revisionssicher – Einträge können weder geändert noch gelöscht werden (Datenbank-Trigger)." />
-      <form className="card mb-4 grid gap-3 p-3 sm:grid-cols-5">
+      <form className="filterbar mb-4 grid gap-3 p-3 sm:grid-cols-5">
         <select name="entityType" defaultValue={sp.entityType ?? ""} className="input" aria-label="Datensatztyp">
           <option value="">Alle Datensätze</option>
           {ENTITY.map((e) => <option key={e} value={e}>{e}</option>)}
@@ -27,7 +27,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         </select>
         <input type="date" name="from" defaultValue={sp.from} className="input" aria-label="Von" />
         <input type="date" name="to" defaultValue={sp.to} className="input" aria-label="Bis" />
-        <button className="min-h-12 rounded-lg bg-anthracite-800 px-4 text-sm font-semibold text-white">Filtern</button>
+        <button className="min-h-12 rounded-lg bg-drkblue-900 px-4 text-sm font-semibold text-white hover:bg-drkblue-600">Filtern</button>
       </form>
       {logs.length === 500 && <Alert tone="info" className="mb-3" title="Es werden die neuesten 500 Einträge angezeigt. Filter verwenden, um ältere Einträge zu finden." />}
       <Card padded={false}><AuditTable logs={logs} showIp /></Card>

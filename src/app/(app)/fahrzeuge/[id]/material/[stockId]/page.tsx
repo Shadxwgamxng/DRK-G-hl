@@ -136,7 +136,7 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
                       <td>{m.user.firstName} {m.user.lastName}</td>
                       <td>
                         {m.note}
-                        {m.attachments.map((a) => <a key={a.id} href={`/api/files/${a.id}`} target="_blank" className="ml-1 text-drk-600 underline">Foto</a>)}
+                        {m.attachments.map((a) => <a key={a.id} href={`/api/files/${a.id}`} target="_blank" className="ml-1 text-drkblue-700 underline">Foto</a>)}
                       </td>
                     </tr>
                   );

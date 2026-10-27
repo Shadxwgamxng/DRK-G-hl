@@ -253,69 +253,82 @@ export async function toPdf(r: Report, actor: Actor) {
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   let logo: PDFImage | null = null;
   try {
-    logo = await pdf.embedPng(await readFile(path.join(process.cwd(), "public/brand/drk-goehl-logo-original.png")));
+    logo = await pdf.embedPng(await readFile(path.join(process.cwd(), "public/brand/drk-goehl-logo.png")));
   } catch {
     logo = null; // Bericht funktioniert auch ohne Logodatei
   }
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const W = 841.89;
   const H = 595.28; // A4 quer
-  const M = 28;
+  const M = 36;
   const size = 7.5;
   const rowH = 12;
   const usable = W - 2 * M;
 
-  // Spaltenbreiten anhand der Inhaltslänge (gedeckelt)
-  const lens = r.columns.map((c, i) => Math.min(40, Math.max(c.length, ...r.rows.slice(0, 200).map((row) => String(row[i] ?? "").length), 4)) + 3);
-  const total = lens.reduce((a, b) => a + b, 0);
-  const widths = lens.map((l) => (l / total) * usable);
+  // Spaltenbreiten anhand der tatsächlichen Textbreite (gedeckelt), passend auf die Seitenbreite skaliert
+  const sample = r.rows.slice(0, 300);
+  const natural = r.columns.map((c, i) =>
+    Math.min(190, Math.max(bold.widthOfTextAtSize(clean(c), size), ...sample.map((row) => font.widthOfTextAtSize(clean(String(row[i] ?? "")), size))) + 10),
+  );
+  const sum = natural.reduce((x, y) => x + y, 0);
+  const widths = sum > usable ? natural.map((w) => (w / sum) * usable) : natural.map((w) => w + (usable - sum) / natural.length);
+
+  // Farben nach DRK-Styleguide (Print): DRK-Rot für Überschriften, Schwarz für Text, Grau 50 % für Nebeninformationen,
+  // Tabellen werden durch Linien gegliedert (feinste Linie 0,25 pt) – keine Farbflächen.
+  const RED = rgb(230 / 255, 0, 5 / 255);
+  const BLACK = rgb(0, 0, 0);
+  const GREY = rgb(0.5, 0.5, 0.5);
+  const LINE = rgb(0.71, 0.71, 0.71);
 
   let page = pdf.addPage([W, H]);
   let y = H - M;
   let pageNo = 1;
+  const footer = () => {
+    page.drawLine({ start: { x: M, y: M - 6 }, end: { x: W - M, y: M - 6 }, thickness: 0.25, color: LINE });
+    page.drawText(clean(`${settings.organizationName} · erstellt am ${fmtDateTime(new Date())} von ${actor.firstName} ${actor.lastName}`), { x: M, y: M - 16, size: 7, font, color: GREY });
+    const label = `Seite ${pageNo}`;
+    page.drawText(label, { x: W - M - font.widthOfTextAtSize(label, 7), y: M - 16, size: 7, font, color: GREY });
+  };
   const header = () => {
-    page.drawRectangle({ x: 0, y: H - 6, width: W, height: 6, color: rgb(0.89, 0, 0.04) });
     if (logo) {
-      const lh = 32;
-      page.drawImage(logo, { x: M, y: y - lh, width: (logo.width / logo.height) * lh, height: lh });
-      page.drawText(clean(`${settings.organizationName} · Erstellt am ${fmtDateTime(new Date())} von ${actor.firstName} ${actor.lastName} · Seite ${pageNo}`), { x: W - M - 330, y: y - 20, size: 7, font, color: rgb(0.4, 0.4, 0.4) });
-      y -= lh + 18;
-    } else {
-      page.drawText(clean(settings.organizationName), { x: M, y: y - 8, size: 9, font: bold, color: rgb(0.89, 0, 0.04) });
-      page.drawText(clean(`Erstellt am ${fmtDateTime(new Date())} von ${actor.firstName} ${actor.lastName} · Seite ${pageNo}`), { x: W - M - 300, y: y - 8, size: 7, font, color: rgb(0.4, 0.4, 0.4) });
-      y -= 24;
+      // Logo auf weißem Grund, rechts oben; Höhe 34 pt ≈ 12 mm (Print-Mindesthöhe 10 mm), Schutzzone durch Seitenrand
+      const lh = 34;
+      const lw = (logo.width / logo.height) * lh;
+      page.drawImage(logo, { x: W - M - lw, y: y - lh, width: lw, height: lh });
     }
-    page.drawText(clean(r.title), { x: M, y, size: 13, font: bold });
-    y -= 14;
+    page.drawText(clean(r.title), { x: M, y: y - 16, size: 16, font: bold, color: RED });
+    y -= 26;
     if (r.subtitle) {
-      page.drawText(clean(r.subtitle), { x: M, y, size: 8, font, color: rgb(0.3, 0.3, 0.3) });
-      y -= 12;
+      page.drawText(clean(r.subtitle), { x: M, y: y - 4, size: 8.5, font, color: GREY });
     }
-    y -= 4;
-    page.drawRectangle({ x: M, y: y - 3, width: usable, height: rowH, color: rgb(0.17, 0.18, 0.2) });
+    y -= 30;
     let x = M;
     r.columns.forEach((c, i) => {
-      page.drawText(truncate(c, bold, size, widths[i] - 4), { x: x + 2, y, size, font: bold, color: rgb(1, 1, 1) });
+      page.drawText(truncate(c, bold, size, widths[i] - 4), { x: x + 2, y, size, font: bold, color: BLACK });
       x += widths[i];
     });
-    y -= rowH;
+    page.drawLine({ start: { x: M, y: y - 4 }, end: { x: W - M, y: y - 4 }, thickness: 1, color: BLACK });
+    y -= rowH + 2;
+    footer();
   };
   header();
-  r.rows.forEach((row, idx) => {
-    if (y < M + rowH) {
+  r.rows.forEach((row) => {
+    if (y < M + rowH + 8) {
       page = pdf.addPage([W, H]);
       pageNo++;
       y = H - M;
       header();
     }
-    if (idx % 2 === 1) page.drawRectangle({ x: M, y: y - 3, width: usable, height: rowH, color: rgb(0.95, 0.95, 0.96) });
     let x = M;
     row.forEach((cell, i) => {
-      page.drawText(truncate(String(cell ?? ""), font, size, widths[i] - 4), { x: x + 2, y, size, font, color: rgb(0.1, 0.1, 0.1) });
+      const text = String(cell ?? "");
+      const muted = text === "–" || text === "";
+      page.drawText(truncate(text, font, size, widths[i] - 4), { x: x + 2, y, size, font, color: muted ? GREY : BLACK });
       x += widths[i];
     });
+    page.drawLine({ start: { x: M, y: y - 4 }, end: { x: W - M, y: y - 4 }, thickness: 0.25, color: LINE });
     y -= rowH;
   });
-  if (r.rows.length === 0) page.drawText("Keine Einträge für die gewählten Filter.", { x: M, y, size: 9, font });
+  if (r.rows.length === 0) page.drawText("Keine Einträge für die gewählten Filter.", { x: M, y, size: 9, font, color: GREY });
   return Buffer.from(await pdf.save());
 }

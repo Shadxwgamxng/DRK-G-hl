@@ -44,7 +44,7 @@ export function SyncIndicator({ userId }: { userId: string }) {
   return (
     <Link
       href="/sync"
-      className={`focus-ring inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-xs font-bold ${online ? "bg-amber-100 text-amber-900" : "bg-anthracite-800 text-white"}`}
+      className={`focus-ring inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-xs font-bold ${online ? "bg-amber-100 text-amber-900" : "bg-drkblue-900 text-white"}`}
       title="Synchronisationsstatus"
     >
       {online ? <RefreshCw className="h-4 w-4" aria-hidden /> : <CloudOff className="h-4 w-4" aria-hidden />}

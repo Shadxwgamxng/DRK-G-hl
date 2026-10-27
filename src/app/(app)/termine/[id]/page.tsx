@@ -74,7 +74,7 @@ export default async function InspectionDetail({ params }: { params: Promise<{ i
                       <td>{fmtEuro(r.cost)}</td>
                       <td>{fmtNumber(r.mileage)}</td>
                       <td className="max-w-xs">{r.remarks}</td>
-                      <td>{r.attachments.map((a) => <a key={a.id} href={`/api/files/${a.id}`} target="_blank" className="mr-2 text-drk-600 underline">{a.originalName}</a>)}</td>
+                      <td>{r.attachments.map((a) => <a key={a.id} href={`/api/files/${a.id}`} target="_blank" className="mr-2 text-drkblue-700 underline">{a.originalName}</a>)}</td>
                     </tr>
                   ))}
                 </tbody>

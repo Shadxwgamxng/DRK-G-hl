@@ -65,13 +65,13 @@ function NavLink({ item, pathname, onClick }: { item: NavItem; pathname: string;
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={clsx(
-        "focus-ring flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
-        active ? "bg-drk-500 text-white" : "text-gray-300 hover:bg-anthracite-700 hover:text-white",
+        "focus-ring flex min-h-11 items-center gap-3 border-l-4 px-3 text-[15px] transition-colors",
+        active ? "border-drk-500 bg-drkblue-50 font-bold text-drkblue-900" : "border-transparent text-drkblue-900 hover:bg-drkblue-50",
       )}
     >
-      <Icon className="h-5 w-5 shrink-0" aria-hidden />
+      <Icon className="h-5 w-5 shrink-0 text-drkblue-900" aria-hidden />
       <span className="flex-1">{item.label}</span>
-      {item.badge ? <span className={clsx("rounded-full px-2 py-0.5 text-xs font-bold", active ? "bg-white text-drk-600" : "bg-drk-500 text-white")}>{item.badge}</span> : null}
+      {item.badge ? <span className="min-w-6 rounded-full bg-drk-500 px-2 py-0.5 text-center text-xs font-bold text-white">{item.badge}</span> : null}
     </Link>
   );
 }
@@ -81,32 +81,38 @@ export function Sidebar({ items, footer }: { items: NavItem[]; footer: ReactNode
   const main = items.filter((i) => i.section !== "admin");
   const admin = items.filter((i) => i.section === "admin");
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-anthracite-900 lg:flex">
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-80 flex-col border-r border-gray-300 bg-white lg:flex">
       <Brand />
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2" aria-label="Hauptnavigation">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto py-2" aria-label="Hauptnavigation">
         {main.map((i) => (
           <NavLink key={i.href} item={i} pathname={pathname} />
         ))}
         {admin.length > 0 && (
           <>
-            <p className="px-3 pb-1 pt-5 text-xs font-semibold uppercase tracking-wider text-gray-500">Administration</p>
+            <p className="mx-4 mt-4 border-t border-gray-300 px-0 pb-1 pt-4 text-xs font-bold uppercase tracking-wider text-gray-500">Administration</p>
             {admin.map((i) => (
               <NavLink key={i.href} item={i} pathname={pathname} />
             ))}
           </>
         )}
       </nav>
-      <div className="border-t border-anthracite-700 p-3">{footer}</div>
+      <div className="border-t border-gray-300 p-3">{footer}</div>
     </aside>
   );
 }
 
+/**
+ * Wort-Bild-Marke: immer auf weißem Grund, digitale Mindesthöhe 60 px,
+ * Schutzzone ≥ eine Balkenbreite des Kreuzes (≈ 1/4 der Logohöhe) – siehe DRK-Styleguide „Logo“.
+ */
 export function Brand() {
   return (
-    <Link href="/" className="block px-5 py-5" aria-label="KFZ-Warte – zur Übersicht">
-      <DrkLogo variant="light" className="max-w-[210px]" priority />
-      <span className="mt-3 block border-t border-anthracite-700 pt-2 text-sm font-bold tracking-wide text-white">KFZ-Warte</span>
-    </Link>
+    <div className="border-b border-gray-300 bg-white px-4 pb-3 pt-4">
+      <Link href="/" className="block" aria-label="KFZ-Warte – zur Übersicht">
+        <DrkLogo className="h-[62px] w-auto" priority />
+      </Link>
+      <p className="mt-3 text-sm font-bold text-drk-500">KFZ-Warte</p>
+    </div>
   );
 }
 
@@ -117,14 +123,14 @@ export function BottomNav({ items, primary, footer }: { items: NavItem[]; primar
   const prim = primary.map((h) => items.find((i) => i.href === h)).filter(Boolean) as NavItem[];
   return (
     <>
-      <nav className="bottom-safe fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white lg:hidden" aria-label="Navigation">
+      <nav className="bottom-safe fixed inset-x-0 bottom-0 z-40 border-t border-gray-300 bg-white lg:hidden" aria-label="Navigation">
         <ul className="grid grid-cols-5">
           {prim.map((item) => {
             const Icon = ICONS[item.icon];
             const active = isActive(pathname, item.href);
             return (
               <li key={item.href}>
-                <Link href={item.href} aria-current={active ? "page" : undefined} className={clsx("relative flex min-h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold", active ? "text-drk-600" : "text-gray-600")}>
+                <Link href={item.href} aria-current={active ? "page" : undefined} className={clsx("relative flex min-h-16 flex-col items-center justify-center gap-0.5 border-t-4 text-[11px] font-semibold", active ? "border-drk-500 text-drk-500" : "border-transparent text-drkblue-900")}>
                   <Icon className="h-6 w-6" aria-hidden />
                   <span className="max-w-full truncate px-1">{item.label}</span>
                   {item.badge ? <span className="absolute right-[22%] top-1.5 min-w-5 rounded-full bg-drk-500 px-1 text-center text-[10px] font-bold text-white">{item.badge}</span> : null}
@@ -133,7 +139,7 @@ export function BottomNav({ items, primary, footer }: { items: NavItem[]; primar
             );
           })}
           <li>
-            <button onClick={() => setOpen(true)} className="flex min-h-16 w-full flex-col items-center justify-center gap-0.5 text-[11px] font-semibold text-gray-600" aria-expanded={open}>
+            <button onClick={() => setOpen(true)} className="flex min-h-16 w-full flex-col items-center justify-center gap-0.5 border-t-4 border-transparent text-[11px] font-semibold text-drkblue-900" aria-expanded={open}>
               <Menu className="h-6 w-6" aria-hidden />
               Mehr
             </button>
@@ -142,20 +148,20 @@ export function BottomNav({ items, primary, footer }: { items: NavItem[]; primar
       </nav>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menü">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <div className="bottom-safe absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-2xl bg-anthracite-900 p-3">
-            <div className="mb-2 flex items-center justify-between">
+          <div className="absolute inset-0 bg-drkblue-900/50" onClick={() => setOpen(false)} />
+          <div className="bottom-safe absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto bg-white pb-2">
+            <div className="flex items-start justify-between">
               <Brand />
-              <button onClick={() => setOpen(false)} className="rounded-lg p-3 text-white" aria-label="Menü schließen">
+              <button onClick={() => setOpen(false)} className="m-2 p-3 text-drkblue-900" aria-label="Menü schließen">
                 <X className="h-6 w-6" />
               </button>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5 py-2">
               {items.map((i) => (
                 <NavLink key={i.href} item={i} pathname={pathname} onClick={() => setOpen(false)} />
               ))}
             </div>
-            <div className="mt-3 border-t border-anthracite-700 pt-3">{footer}</div>
+            <div className="border-t border-gray-300 p-3">{footer}</div>
           </div>
         </div>
       )}
@@ -176,7 +182,7 @@ export function LogoutButton({ userId, className }: { userId: string; className?
     await logoutAction();
   }
   return (
-    <button type="button" onClick={logout} disabled={busy} className={clsx("focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium", className ?? "text-gray-300 hover:bg-anthracite-700 hover:text-white")}>
+    <button type="button" onClick={logout} disabled={busy} className={clsx("focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium", className ?? "text-drkblue-900 hover:bg-drkblue-50")}>
       <LogOut className="h-5 w-5" aria-hidden /> {busy ? "Abmelden …" : "Abmelden"}
     </button>
   );

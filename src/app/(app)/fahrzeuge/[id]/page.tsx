@@ -125,14 +125,14 @@ export default async function VehiclePage({ params, searchParams }: { params: Pr
         </Card>
       )}
 
-      <Card title="Offene Mängel" actions={<Link href={`/fahrzeuge/${id}/maengel`} className="text-sm font-semibold text-drk-600">Alle Mängel</Link>}>
+      <Card title="Offene Mängel" actions={<Link href={`/fahrzeuge/${id}/maengel`} className="text-sm font-bold text-drkblue-700 hover:text-drkblue-600">Alle Mängel</Link>}>
         {openDefects.length === 0 ? (
           <p className="text-sm text-gray-600">Keine offenen Mängel.</p>
         ) : (
           <ul className="divide-y divide-gray-100">
             {openDefects.map((d) => (
               <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                <Link href={`/maengel/${d.id}`} className="min-w-0 font-semibold hover:text-drk-600">
+                <Link href={`/maengel/${d.id}`} className="min-w-0 font-semibold hover:text-drkblue-600">
                   {d.severity === "CRITICAL" && <AlertOctagon className="mr-1 inline h-4 w-4 text-drk-600" aria-hidden />}
                   {d.title}
                   <span className="block text-xs font-normal text-gray-500">Gemeldet {fmtDateTime(d.reportedAt)} von {d.reportedBy.firstName} {d.reportedBy.lastName}</span>

@@ -18,13 +18,13 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader title="Benutzerverwaltung" subtitle={`${users.length} Benutzer`} />
       {pending > 0 && !sp.status && <Alert tone="warning" className="mb-4" title={`${pending} Registrierung(en) warten auf Freigabe`} />}
-      <form className="card mb-4 grid gap-3 p-3 sm:grid-cols-3">
+      <form className="filterbar mb-4 grid gap-3 p-3 sm:grid-cols-3">
         <input name="q" defaultValue={sp.q} placeholder="Name, Benutzername, E-Mail" className="input" aria-label="Suche" />
         <select name="status" defaultValue={sp.status ?? ""} className="input" aria-label="Status">
           <option value="">Alle Status</option>
           {Object.entries(USER_STATUS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <button className="min-h-12 rounded-lg bg-anthracite-800 px-4 text-sm font-semibold text-white">Filtern</button>
+        <button className="min-h-12 rounded-lg bg-drkblue-900 px-4 text-sm font-semibold text-white hover:bg-drkblue-600">Filtern</button>
       </form>
       <Card padded={false}>
         <TableWrap>
@@ -33,7 +33,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
             <tbody>
               {users.map((u) => (
                 <tr key={u.id} className={u.status === "PENDING" ? "bg-amber-50" : undefined}>
-                  <td><Link href={`/admin/benutzer/${u.id}`} className="font-semibold hover:text-drk-600">{u.lastName}, {u.firstName}</Link><div className="text-xs text-gray-500">{u.username} · {u.email}{u.position ? ` · ${u.position}` : ""}</div></td>
+                  <td><Link href={`/admin/benutzer/${u.id}`} className="font-semibold hover:text-drkblue-600">{u.lastName}, {u.firstName}</Link><div className="text-xs text-gray-500">{u.username} · {u.email}{u.position ? ` · ${u.position}` : ""}</div></td>
                   <td><Badge tone={tone[u.status]}>{USER_STATUS[u.status]}</Badge></td>
                   <td>{u.role.name}</td>
                   <td>{u.assignments.map((a) => a.vehicle.name).join(", ") || <span className="text-gray-500">keine</span>}</td>

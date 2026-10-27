@@ -54,7 +54,7 @@ export default async function CheckDetail({ params, searchParams }: { params: Pr
           <ul className="space-y-2">
             {c.defects.map((d) => (
               <li key={d.id} className="flex flex-wrap items-center gap-2">
-                <Link href={`/maengel/${d.id}`} className="font-semibold text-drk-600 underline">{d.title}</Link>
+                <Link href={`/maengel/${d.id}`} className="font-bold text-drkblue-700 hover:text-drkblue-600 underline">{d.title}</Link>
                 <DefectStatusBadge status={d.status} />
               </li>
             ))}

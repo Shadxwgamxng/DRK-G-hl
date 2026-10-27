@@ -39,13 +39,13 @@ export function DefectTable({ defects, showVehicle = true }: { defects: Row[]; s
           {defects.map((d) => (
             <tr key={d.id} className={d.severity === "CRITICAL" && d.status !== "CLOSED" ? "bg-drk-50/60" : undefined}>
               <td>
-                <Link href={`/maengel/${d.id}`} className="font-semibold hover:text-drk-600">{d.title}</Link>
+                <Link href={`/maengel/${d.id}`} className="font-semibold hover:text-drkblue-600">{d.title}</Link>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   {DEFECT_CATEGORY[d.category]}
                   {d._count.attachments > 0 && (<><Paperclip className="ml-1 h-3 w-3" aria-hidden /> {d._count.attachments}</>)}
                 </div>
               </td>
-              {showVehicle && <td><Link href={`/fahrzeuge/${d.vehicle.id}`} className="hover:text-drk-600">{d.vehicle.name}</Link></td>}
+              {showVehicle && <td><Link href={`/fahrzeuge/${d.vehicle.id}`} className="hover:text-drkblue-600">{d.vehicle.name}</Link></td>}
               <td><SeverityBadge severity={d.severity} /></td>
               <td><DefectStatusBadge status={d.status} /></td>
               <td className="whitespace-nowrap">{fmtDateTime(d.reportedAt)}<div className="text-xs text-gray-500">{d.reportedBy.firstName} {d.reportedBy.lastName}</div></td>

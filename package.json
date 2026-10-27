@@ -21,6 +21,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@fontsource/open-sans": "^5.2.6",
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",

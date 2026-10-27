@@ -14,7 +14,7 @@ export function VehicleTabs({ id, tabs }: { id: string; tabs: { href: string; la
           const active = t.href === "" ? pathname === href : pathname.startsWith(href);
           return (
             <li key={t.href}>
-              <Link href={href} aria-current={active ? "page" : undefined} className={clsx("flex min-h-12 items-center whitespace-nowrap border-b-2 px-3 text-sm font-semibold", active ? "border-drk-500 text-drk-600" : "border-transparent text-gray-600 hover:text-anthracite-900")}>
+              <Link href={href} aria-current={active ? "page" : undefined} className={clsx("flex min-h-12 items-center whitespace-nowrap border-b-2 px-3 text-sm font-semibold", active ? "border-drk-500 text-drk-600" : "border-transparent text-gray-600 hover:text-gray-700")}>
                 {t.label}
               </Link>
             </li>

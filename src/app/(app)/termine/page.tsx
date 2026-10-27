@@ -21,7 +21,7 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
         subtitle="HU, Sicherheitsprüfungen, Wartungen und Geräteprüfungen aller sichtbaren Fahrzeuge"
         actions={<LinkButton variant="secondary" href={`/api/export/termine?format=pdf${sp.vehicleId ? `&vehicleId=${sp.vehicleId}` : ""}`} prefetch={false}>PDF-Übersicht</LinkButton>}
       />
-      <form className="card mb-4 grid gap-3 p-3 sm:grid-cols-4">
+      <form className="filterbar mb-4 grid gap-3 p-3 sm:grid-cols-4">
         <select name="vehicleId" defaultValue={sp.vehicleId ?? ""} className="input" aria-label="Fahrzeug">
           <option value="">Alle Fahrzeuge</option>
           {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
@@ -36,7 +36,7 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
           <option value="due_soon">Bald fällig</option>
           <option value="ok">Im Plan</option>
         </select>
-        <button className="min-h-12 rounded-lg bg-anthracite-800 px-4 text-sm font-semibold text-white">Filtern</button>
+        <button className="min-h-12 rounded-lg bg-drkblue-900 px-4 text-sm font-semibold text-white hover:bg-drkblue-600">Filtern</button>
       </form>
       <Card padded={list.length === 0}>
         {list.length === 0 ? (
@@ -48,8 +48,8 @@ export default async function InspectionsPage({ searchParams }: { searchParams: 
               <tbody>
                 {list.map((i) => (
                   <tr key={i.id} className={i.state === "overdue" ? "bg-drk-50/60" : undefined}>
-                    <td><Link href={`/termine/${i.id}`} className="font-semibold hover:text-drk-600">{i.title}</Link><div className="text-xs text-gray-500">{i.type.name}</div></td>
-                    <td><Link href={`/fahrzeuge/${i.vehicle.id}`} className="hover:text-drk-600">{i.vehicle.name}</Link></td>
+                    <td><Link href={`/termine/${i.id}`} className="font-semibold hover:text-drkblue-600">{i.title}</Link><div className="text-xs text-gray-500">{i.type.name}</div></td>
+                    <td><Link href={`/fahrzeuge/${i.vehicle.id}`} className="hover:text-drkblue-600">{i.vehicle.name}</Link></td>
                     <td><DueBadge date={i.dueDate} days={i.days} warnDays={Math.max(0, ...i.reminderDays)} /></td>
                     <td>{fmtDate(i.lastDate)}</td>
                     <td>{i.intervalValue ? `${i.intervalValue} ${INTERVAL_UNIT[i.intervalUnit!]}` : "einmalig"}</td>

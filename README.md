@@ -9,6 +9,7 @@ Web-App (installierbar als PWA) zur Verwaltung von Einsatzfahrzeugen, Fahrzeugko
 | Installation, Deployment, Cron, PWA (Android/iOS) | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 | Datenbank-Backup & Wiederherstellung, Löschkonzept | [docs/BACKUP.md](docs/BACKUP.md) |
 | Abnahmetests und Teststatus | [docs/TESTS.md](docs/TESTS.md) |
+| Gestaltung nach DRK-Styleguide | [docs/DESIGN.md](docs/DESIGN.md) |
 
 ## Screenshots
 
@@ -49,7 +50,7 @@ DATABASE_URL=…/drk_kfz_demo DEMO_MODE=true npm run db:demo
 
 ## Getroffene Standardentscheidungen
 
-- **Logo:** Das vom Ortsverein bereitgestellte Logo („Deutsches Rotes Kreuz – Ortsverein Göhl e.V. Bereitschaft“) liegt in `public/brand/` (Original, transparente Fassung für helle und für dunkle Hintergründe) und wird in Sidebar, Anmeldung, Offline-Seite und PDF-Berichten verwendet. App-Icons zeigen das Rotkreuz-Zeichen aus dem Logo (`public/icons/`). Die Logofassungen wurden aus einer 430×93-px-Vorlage erzeugt – bei Bedarf durch eine hochauflösende Datei/SVG des Landesverbands ersetzen.
+- **Logo & Design:** Gestaltung nach dem DRK-Styleguide (styleguide.drk.de): Wort-Bild-Marke des Ortsvereins (`public/brand/drk-goehl-logo.png`) ausschließlich auf weißem Grund, digital mind. 60 px hoch mit Schutzzone; Web-Farbpalette (DRK-Rot, Dunkelrot, Dunkelblau, Mittel-/Volltonblau, Hellblau, Dunkel-/Mittel-/Hellgrau); Hausschrift Helvetica Neue mit Ersatzschriften Open Sans → Arial. Das App-Icon zeigt nur das Rotkreuz-Zeichen auf Weiß – bitte mit dem Landes-/Kreisverband abstimmen. Die Logovorlage ist nur 430×93 px; eine hochauflösende Datei/SVG sollte nachgereicht werden.
 - **Zugriff ohne Fahrzeugzuweisung = nichts sichtbar** (außer Administratoren mit „Alle Fahrzeuge sehen“).
 - **Fahrzeugfreigabe nie automatisch:** Das Schließen eines Mangels ändert den Fahrzeugstatus nicht.
 - **Prüfintervalle ohne gesetzliche Voreinstellungen;** je Termin konfigurierbar, Erinnerungen standardmäßig 30/14/7 Tage.

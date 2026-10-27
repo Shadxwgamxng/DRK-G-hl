@@ -29,7 +29,7 @@ export default async function VehicleChecksPage({ params }: { params: Promise<{ 
                   <td>{c.performedBy.firstName} {c.performedBy.lastName}</td>
                   <td className="tabular-nums">{fmtNumber(c.mileage)}</td>
                   <td><Badge tone={c.outcome === "OK" ? "green" : "red"}>{CHECK_OUTCOME[c.outcome]}{c._count.results ? ` (${c._count.results})` : ""}</Badge></td>
-                  <td><Link href={`/fahrzeuge/${id}/kontrollen/${c.id}`} className="font-semibold text-drk-600">Details</Link></td>
+                  <td><Link href={`/fahrzeuge/${id}/kontrollen/${c.id}`} className="font-bold text-drkblue-700 hover:text-drkblue-600">Details</Link></td>
                 </tr>
               ))}
             </tbody>

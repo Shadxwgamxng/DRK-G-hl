@@ -13,7 +13,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <PageHeader title="Suche" subtitle={q ? `Ergebnisse für „${q}“` : undefined} />
-      <form className="card mb-4 flex gap-2 p-3" role="search">
+      <form className="filterbar mb-4 flex gap-2 p-3" role="search">
         <input name="q" defaultValue={q} className="input" placeholder="Fahrzeug, Kennzeichen, Material, Charge, Mangel …" aria-label="Suchbegriff" autoFocus />
         <button className="min-h-12 rounded-lg bg-drk-500 px-4 font-semibold text-white">Suchen</button>
       </form>

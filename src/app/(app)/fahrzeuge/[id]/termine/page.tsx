@@ -29,7 +29,7 @@ export default async function VehicleInspections({ params }: { params: Promise<{
               <tbody>
                 {list.map((i) => (
                   <tr key={i.id}>
-                    <td><Link href={`/termine/${i.id}`} className="font-semibold hover:text-drk-600">{i.title}</Link><div className="text-xs text-gray-500">{i.type.name}</div></td>
+                    <td><Link href={`/termine/${i.id}`} className="font-semibold hover:text-drkblue-600">{i.title}</Link><div className="text-xs text-gray-500">{i.type.name}</div></td>
                     <td><DueBadge date={i.dueDate} days={i.days} warnDays={Math.max(0, ...i.reminderDays)} /></td>
                     <td>{fmtDate(i.lastDate)}</td>
                     <td>{i.intervalValue ? `${i.intervalValue} ${INTERVAL_UNIT[i.intervalUnit!]}` : "einmalig"}</td>

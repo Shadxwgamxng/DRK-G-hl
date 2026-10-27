@@ -26,7 +26,7 @@ export default async function MovementsPage({ searchParams }: { searchParams: Pr
         back={{ href: "/lager", label: "Zentrallager" }}
         actions={can(actor, "reports.view") && <><LinkButton variant="secondary" href={`/api/export/bewegungen?format=csv&${qs}`} prefetch={false}>CSV</LinkButton><LinkButton variant="secondary" href={`/api/export/bewegungen?format=pdf&${qs}`} prefetch={false}>PDF</LinkButton></>}
       />
-      <form className="card mb-4 grid gap-3 p-3 sm:grid-cols-3 lg:grid-cols-6">
+      <form className="filterbar mb-4 grid gap-3 p-3 sm:grid-cols-3 lg:grid-cols-6">
         <select name="vehicleId" defaultValue={sp.vehicleId ?? ""} className="input" aria-label="Fahrzeug">
           <option value="">Alle Fahrzeuge</option>
           {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
@@ -41,7 +41,7 @@ export default async function MovementsPage({ searchParams }: { searchParams: Pr
         </select>
         <input type="date" name="from" defaultValue={sp.from} className="input" aria-label="Von" />
         <input type="date" name="to" defaultValue={sp.to} className="input" aria-label="Bis" />
-        <button className="min-h-12 rounded-lg bg-anthracite-800 px-4 text-sm font-semibold text-white">Filtern</button>
+        <button className="min-h-12 rounded-lg bg-drkblue-900 px-4 text-sm font-semibold text-white hover:bg-drkblue-600">Filtern</button>
       </form>
       <Card padded={rows.length === 0}>
         {rows.length === 0 ? <p className="text-sm text-gray-600">Keine Bewegungen gefunden.</p> : (

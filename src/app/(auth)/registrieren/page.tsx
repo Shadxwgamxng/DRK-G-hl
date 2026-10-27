@@ -41,7 +41,7 @@ export default function RegisterPage() {
       </ActionForm>
       <p className="mt-6 text-center text-sm text-gray-600">
         Bereits registriert?{" "}
-        <Link href="/login" className="font-semibold text-drk-600 underline">
+        <Link href="/login" className="font-bold text-drkblue-700 hover:text-drkblue-600 underline">
           Anmelden
         </Link>
       </p>

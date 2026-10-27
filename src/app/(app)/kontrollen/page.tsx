@@ -29,14 +29,14 @@ export default async function ChecksPage({ searchParams }: { searchParams: Promi
           </div>
         </Card>
       )}
-      <form className="card mb-4 grid gap-3 p-3 sm:grid-cols-4">
+      <form className="filterbar mb-4 grid gap-3 p-3 sm:grid-cols-4">
         <select name="vehicleId" defaultValue={sp.vehicleId ?? ""} className="input" aria-label="Fahrzeug">
           <option value="">Alle Fahrzeuge</option>
           {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
         </select>
         <input type="date" name="from" defaultValue={sp.from} className="input" aria-label="Von" />
         <input type="date" name="to" defaultValue={sp.to} className="input" aria-label="Bis" />
-        <button className="min-h-12 rounded-lg bg-anthracite-800 px-4 text-sm font-semibold text-white">Filtern</button>
+        <button className="min-h-12 rounded-lg bg-drkblue-900 px-4 text-sm font-semibold text-white hover:bg-drkblue-600">Filtern</button>
       </form>
       <Card padded={checks.length === 0}>
         {checks.length === 0 ? <EmptyState icon={<ClipboardCheck className="h-10 w-10" />} title="Keine Kontrollen gefunden" /> : (
@@ -46,7 +46,7 @@ export default async function ChecksPage({ searchParams }: { searchParams: Promi
               <tbody>
                 {checks.map((c) => (
                   <tr key={c.id}>
-                    <td className="whitespace-nowrap"><Link href={`/fahrzeuge/${c.vehicle.id}/kontrollen/${c.id}`} className="font-semibold hover:text-drk-600">{fmtDateTime(c.performedAt)}</Link></td>
+                    <td className="whitespace-nowrap"><Link href={`/fahrzeuge/${c.vehicle.id}/kontrollen/${c.id}`} className="font-semibold hover:text-drkblue-600">{fmtDateTime(c.performedAt)}</Link></td>
                     <td>{c.vehicle.name}</td>
                     <td>{CHECK_TYPE[c.checkType]}</td>
                     <td>{c.performedBy.firstName} {c.performedBy.lastName}</td>

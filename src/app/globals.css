@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Gestaltung nach DRK-Styleguide (styleguide.drk.de): Fließtext Dunkelgrau, Überschriften DRK-Rot,
+   Links Volltonblau / Hover Mittelblau, Formularflächen Hellblau, Trennlinien Mittelgrau, viel Weißraum. */
+
 :root {
   color-scheme: light;
 }
@@ -12,38 +15,56 @@ html {
 }
 
 body {
-  @apply bg-gray-100 text-anthracite-900 antialiased;
+  @apply bg-gray-100 font-sans text-gray-700 antialiased;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+@layer base {
+  h1, h2, h3 {
+    @apply text-drk-500;
+  }
+  strong, b {
+    @apply font-bold;
+  }
 }
 
 @layer components {
   .input {
-    @apply block w-full min-h-12 rounded-lg border border-gray-300 bg-white px-3 py-2 text-base text-anthracite-900 shadow-sm
-      placeholder:text-gray-400 focus:border-drk-500 focus:outline-none focus:ring-2 focus:ring-drk-500/30
+    @apply block w-full min-h-12 rounded-sm border border-drkblue-300 bg-white px-3 py-2 text-base text-gray-800
+      placeholder:text-gray-400 focus:border-drkblue-900 focus:outline-none focus:ring-2 focus:ring-drkblue-900/25
       disabled:bg-gray-100 disabled:text-gray-500;
   }
   .input[aria-invalid="true"] {
-    @apply border-drk-600 ring-2 ring-drk-500/20;
+    @apply border-drk-500 ring-2 ring-drk-500/20;
   }
   .label {
-    @apply mb-1 block text-sm font-semibold text-anthracite-800;
+    @apply mb-1 block text-sm font-bold text-gray-700;
   }
   .card {
-    @apply rounded-xl border border-gray-200 bg-white shadow-sm;
+    @apply border border-gray-200 bg-white;
+  }
+  /* Filter- und Suchleisten als Formularfläche in Hellblau */
+  .filterbar {
+    @apply border border-drkblue-100 bg-drkblue-50;
   }
   .table-base {
     @apply w-full text-left text-sm;
   }
   .table-base th {
-    @apply whitespace-nowrap border-b border-gray-200 bg-gray-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600;
+    @apply whitespace-nowrap border-b-2 border-drkblue-900 bg-white px-3 py-2 text-xs font-bold uppercase tracking-wide text-drkblue-900;
   }
   .table-base td {
-    @apply border-b border-gray-100 px-3 py-2.5 align-top;
+    @apply border-b border-gray-200 px-3 py-2.5 align-top;
   }
   .table-base tbody tr:hover {
-    @apply bg-gray-50;
+    @apply bg-drkblue-50;
+  }
+  .text-link {
+    @apply font-bold text-drkblue-700 underline-offset-2 hover:text-drkblue-600 hover:underline;
   }
   .focus-ring {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-drk-500 focus-visible:ring-offset-2;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-drkblue-900 focus-visible:ring-offset-2;
   }
 }
 

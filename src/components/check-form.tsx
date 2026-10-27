@@ -146,7 +146,7 @@ export function CheckForm({ userId, vehicle, checklist, draftId }: { userId: str
           return (
             <li key={item.id} id={`item-${item.id}`} className={clsx("card p-4", r.result === "DEFECT" && "border-drk-300 bg-drk-50/40", !r.result && error && "ring-2 ring-amber-400")}>
               <p className="font-semibold">
-                <span className="mr-2 text-gray-400">{idx + 1}.</span>
+                <span className="mr-2 text-drk-500">{idx + 1}.</span>
                 {item.label}
               </p>
               {item.description && <p className="mt-0.5 text-sm text-gray-600">{item.description}</p>}
@@ -162,7 +162,7 @@ export function CheckForm({ userId, vehicle, checklist, draftId }: { userId: str
                     role="radio"
                     aria-checked={r.result === value}
                     onClick={() => set(item.id, { result: value })}
-                    className={clsx("flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-lg border-2 px-1 text-xs font-bold sm:flex-row sm:gap-2 sm:text-sm", r.result === value ? activeCls : "border-gray-200 bg-white text-anthracite-800")}
+                    className={clsx("flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-lg border-2 px-1 text-xs font-bold sm:flex-row sm:gap-2 sm:text-sm", r.result === value ? activeCls : "border-gray-200 bg-white text-gray-700")}
                   >
                     <Icon className="h-5 w-5" aria-hidden /> {label}
                   </button>

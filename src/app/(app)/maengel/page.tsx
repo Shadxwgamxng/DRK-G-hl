@@ -29,7 +29,7 @@ export default async function DefectsPage({ searchParams }: { searchParams: Prom
           </>
         }
       />
-      <form className="card mb-4 grid gap-3 p-3 sm:grid-cols-3 lg:grid-cols-4">
+      <form className="filterbar mb-4 grid gap-3 p-3 sm:grid-cols-3 lg:grid-cols-4">
         <input name="q" defaultValue={sp.q} placeholder="Suche in Titel/Beschreibung" className="input" aria-label="Suche" />
         <select name="vehicleId" defaultValue={sp.vehicleId ?? ""} className="input" aria-label="Fahrzeug">
           <option value="">Alle Fahrzeuge</option>
@@ -56,7 +56,7 @@ export default async function DefectsPage({ searchParams }: { searchParams: Prom
           <span className="sr-only">Bis</span>
           <input type="date" name="to" defaultValue={sp.to} className="input" aria-label="Gemeldet bis" />
         </label>
-        <button className="min-h-12 rounded-lg bg-anthracite-800 px-4 text-sm font-semibold text-white">Filtern</button>
+        <button className="min-h-12 rounded-lg bg-drkblue-900 px-4 text-sm font-semibold text-white hover:bg-drkblue-600">Filtern</button>
       </form>
       <Card padded={false}>
         <DefectTable defects={defects} />

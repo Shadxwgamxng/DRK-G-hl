@@ -43,14 +43,14 @@ export default async function RefillPage({ searchParams }: { searchParams: Promi
         {tab("PROVIDED", "Bereitgestellt")}
         {tab("history", "Historie")}
       </div>
-      <form className="card mb-4 grid gap-3 p-3 sm:grid-cols-3">
+      <form className="filterbar mb-4 grid gap-3 p-3 sm:grid-cols-3">
         <input type="hidden" name="status" value={status} />
         <select name="vehicleId" defaultValue={sp.vehicleId ?? ""} className="input" aria-label="Fahrzeug">
           <option value="">Alle Fahrzeuge</option>
           {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
         </select>
         <input name="q" defaultValue={sp.q} placeholder="Material suchen" className="input" aria-label="Material" />
-        <button className="min-h-12 rounded-lg bg-anthracite-800 px-4 text-sm font-semibold text-white">Filtern</button>
+        <button className="min-h-12 rounded-lg bg-drkblue-900 px-4 text-sm font-semibold text-white hover:bg-drkblue-600">Filtern</button>
       </form>
 
       {rows.length === 0 ? (
@@ -71,7 +71,7 @@ export default async function RefillPage({ searchParams }: { searchParams: Promi
                         {r.requestedQuantity} {r.material.unit} · {r.material.name}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <Link href={`/fahrzeuge/${r.vehicleId}/material/${r.vehicleStockId}`} className="font-semibold hover:text-drk-600">{r.vehicle.name}</Link> · Soll {s.targetQuantity} / Ist {s.currentQuantity}
+                        <Link href={`/fahrzeuge/${r.vehicleId}/material/${r.vehicleStockId}`} className="font-semibold hover:text-drkblue-600">{r.vehicle.name}</Link> · Soll {s.targetQuantity} / Ist {s.currentQuantity}
                         {r.material.batchTracked && <Badge className="ml-2">chargengeführt</Badge>}
                       </p>
                       <p className="mt-1 text-sm">Grund: {r.reason}</p>
