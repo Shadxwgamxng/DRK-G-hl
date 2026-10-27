@@ -1,4 +1,5 @@
 import { addDays, berlinToday, daysUntil, fmtDate, toDateInput } from "@/lib/format";
+import { monthName, nextCheckDue } from "@/lib/check-schedule";
 import { db } from "../db";
 import { mailConfigured, sendMail } from "../mail";
 import { notify, recipientsFor } from "../notifications";
@@ -55,24 +56,32 @@ export async function runReminders(now = new Date()) {
     });
   }
 
-  // 3) Überfällige Fahrzeugkontrollen
+  // 3) Fahrzeugkontrollen (Standard: 1 × pro Kalendermonat)
+  //    - 7 Tage vor Monatsende: Erinnerung, falls im laufenden Monat noch keine Kontrolle erfolgt ist
+  //    - danach: Meldung „überfällig“ (je Fälligkeitsdatum nur einmal)
   const vehicles = await db.vehicle.findMany({
     where: { archivedAt: null, status: { not: "OUT_OF_SERVICE" } },
     include: { checks: { orderBy: { performedAt: "desc" }, take: 1 } },
   });
   for (const v of vehicles) {
     const last = v.checks[0];
-    if (!last) continue;
-    const due = addDays(berlinToday(last.performedAt), v.checkIntervalDays);
-    if (daysUntil(due, now)! >= 0) continue;
+    const due = nextCheckDue(last?.performedAt, v.checkIntervalValue, v.checkIntervalUnit, now, v.createdAt);
+    const days = daysUntil(due, now)!;
+    const overdue = days < 0;
+    if (!overdue && days > 7) continue;
     const recipients = await recipientsFor({ permission: "checks.perform", vehicleId: v.id });
     const managers = await recipientsFor({ permission: "defects.manage", vehicleId: v.id });
+    const monthly = v.checkIntervalUnit === "MONTHS";
     created += await notify([...new Set([...recipients, ...managers])], {
-      type: "check_overdue",
-      title: `Fahrzeugkontrolle überfällig: ${v.name}`,
-      body: `Letzte Kontrolle am ${fmtDate(last.performedAt)}`,
+      type: overdue ? "check_overdue" : "check_due",
+      title: overdue
+        ? `Fahrzeugkontrolle überfällig: ${v.name}`
+        : monthly
+          ? `Monatskontrolle ${monthName(due)} noch offen: ${v.name}`
+          : `Fahrzeugkontrolle fällig: ${v.name}`,
+      body: `${last ? `Letzte Kontrolle am ${fmtDate(last.performedAt)}` : "Noch keine Kontrolle dokumentiert"} · fällig bis ${fmtDate(due)}`,
       link: `/fahrzeuge/${v.id}`,
-      dedupeKey: `check-overdue:${v.id}:${last.id}`,
+      dedupeKey: `check-${overdue ? "overdue" : "due"}:${v.id}:${toDateInput(due)}`,
     });
   }
 

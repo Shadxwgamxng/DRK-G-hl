@@ -44,8 +44,10 @@ export async function dashboardData(actor: Actor) {
       : Promise.resolve([]),
   ]);
 
-  const checksDueToday = vehicles.filter((v) => !v.archivedAt && v.status !== "OUT_OF_SERVICE" && (v.nextCheckInDays === null || v.nextCheckInDays === 0));
-  const checksOverdue = vehicles.filter((v) => !v.archivedAt && v.status !== "OUT_OF_SERVICE" && v.nextCheckInDays !== null && v.nextCheckInDays < 0);
+  const active = vehicles.filter((v) => !v.archivedAt && v.status !== "OUT_OF_SERVICE");
+  // „fällig“ = im laufenden Monat noch keine Kontrolle (bzw. bei Tagesintervall heute fällig)
+  const checksDueToday = active.filter((v) => v.checkState === "due");
+  const checksOverdue = active.filter((v) => v.checkState === "overdue");
 
   return {
     vehicles,

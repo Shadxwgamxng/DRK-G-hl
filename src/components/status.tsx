@@ -58,3 +58,8 @@ export function ExpiryBadge({ date }: { date: Date | null | undefined; }) {
   const tone: Tone = days < 0 ? "red" : days <= 30 ? "yellow" : "gray";
   return <Badge tone={tone}>{days < 0 ? `abgelaufen ${fmtDate(date)}` : fmtDate(date)}</Badge>;
 }
+
+/** Fälligkeit der regelmäßigen Fahrzeugkontrolle (Standard: 1 × pro Kalendermonat, fällig bis Monatsende). */
+export function CheckDue({ v }: { v: { nextCheckDue: Date; nextCheckInDays: number; checkWarnDays: number; checkState: string } }) {
+  return <DueBadge date={v.nextCheckDue} days={v.nextCheckInDays} warnDays={v.checkWarnDays} />;
+}

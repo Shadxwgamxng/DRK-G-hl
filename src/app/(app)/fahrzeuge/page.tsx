@@ -5,7 +5,7 @@ import { requireActiveActor } from "@/server/auth/current";
 import { can } from "@/server/actor";
 import { listVehicleTypes, summarizeVehicles } from "@/server/services/vehicles";
 import { EmptyState, LinkButton, PageHeader, TableWrap } from "@/components/ui";
-import { DueBadge, VehicleStatusBadge } from "@/components/status";
+import { CheckDue, DueBadge, VehicleStatusBadge } from "@/components/status";
 import { VehicleCards } from "@/components/vehicle-cards";
 import { daysUntil, fmtDate } from "@/lib/format";
 import { VEHICLE_STATUS } from "@/lib/labels";
@@ -117,7 +117,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                       <VehicleStatusBadge status={v.status} />
                     </td>
                     <td className="whitespace-nowrap">{fmtDate(v.lastCheck?.performedAt)}</td>
-                    <td>{v.nextCheckDue ? <DueBadge date={v.nextCheckDue} days={v.nextCheckInDays} warnDays={1} /> : <span className="text-drk-700">ausstehend</span>}</td>
+                    <td><CheckDue v={v} /></td>
                     <td>{v.nextHu ? <DueBadge date={v.nextHu.dueDate} days={daysUntil(v.nextHu.dueDate)} /> : "–"}</td>
                     <td>{v.nextMaintenance ? <DueBadge date={v.nextMaintenance.dueDate} days={daysUntil(v.nextMaintenance.dueDate)} /> : "–"}</td>
                     <td className="text-right tabular-nums">

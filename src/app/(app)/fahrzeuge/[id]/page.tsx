@@ -12,6 +12,8 @@ import { ActionForm, InlineAction, SelectInput, SubmitButton, TextArea } from "@
 import { addVehicleDocumentsAction, archiveVehicleAction, setVehicleStatusAction } from "@/app/actions/vehicles";
 import { daysUntil, fmtDate, fmtDateTime, fmtNumber } from "@/lib/format";
 import { VEHICLE_STATUS } from "@/lib/labels";
+import { checkIntervalLabel } from "@/lib/check-schedule";
+import { CheckDue } from "@/components/status";
 
 export default async function VehiclePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string>> }) {
   const actor = await requireActiveActor();
@@ -67,7 +69,7 @@ export default async function VehiclePage({ params, searchParams }: { params: Pr
           <DefinitionList
             items={[
               ["Letzte Kontrolle", v.lastCheck ? `${fmtDateTime(v.lastCheck.performedAt)} – ${v.lastCheck.performedBy.firstName} ${v.lastCheck.performedBy.lastName}` : "Noch keine Kontrolle"],
-              ["Nächste Kontrolle", v.nextCheckDue ? <DueBadge date={v.nextCheckDue} days={v.nextCheckInDays} warnDays={1} /> : "sofort fällig"],
+              ["Nächste Kontrolle", <CheckDue key="nc" v={v} />],
               ["Nächste HU", v.nextHu ? <DueBadge date={v.nextHu.dueDate} days={daysUntil(v.nextHu.dueDate)} /> : "nicht geplant"],
               ["Nächste Wartung / Prüfung", v.nextMaintenance ? <span>{v.nextMaintenance.title}: <DueBadge date={v.nextMaintenance.dueDate} days={daysUntil(v.nextMaintenance.dueDate)} /></span> : "nicht geplant"],
               ["Offene Mängel", `${v.openDefects}${v.criticalDefects ? ` (davon ${v.criticalDefects} kritisch)` : ""}`],
@@ -88,7 +90,7 @@ export default async function VehiclePage({ params, searchParams }: { params: Pr
               ["Kilometerstand", v.mileage != null ? `${fmtNumber(v.mileage)} km` : "–"],
               ["Standort", v.location ?? "–"],
               ["Verantwortlich", v.responsibleUser ? `${v.responsibleUser.firstName} ${v.responsibleUser.lastName}` : "–"],
-              ["Kontrollintervall", `${v.checkIntervalDays} Tage`],
+              ["Kontrollintervall", checkIntervalLabel(v.checkIntervalValue, v.checkIntervalUnit)],
             ]}
           />
           {v.remarks && <p className="mt-3 whitespace-pre-line rounded bg-gray-50 p-2 text-sm">{v.remarks}</p>}

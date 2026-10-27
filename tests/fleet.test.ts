@@ -23,11 +23,11 @@ describe("Fahrzeugbestand DRK OV Göhl", () => {
   it("Kennzeichen ist optional und kann wieder geleert werden", async () => {
     const admin = await makeUser("ADMIN");
     const type = await db.vehicleType.findFirstOrThrow();
-    const v = await createVehicle(admin, { name: "Feldkochherd Test", internalNumber: "FKH-TEST", licensePlate: "", typeId: type.id, checkIntervalDays: "30" });
+    const v = await createVehicle(admin, { name: "Feldkochherd Test", internalNumber: "FKH-TEST", licensePlate: "", typeId: type.id, checkIntervalValue: "1" });
     expect(v.licensePlate).toBeNull();
-    await updateVehicle(admin, v.id, { name: "Feldkochherd Test", internalNumber: "FKH-TEST", licensePlate: "oh-fk 1", typeId: type.id, checkIntervalDays: "30", remarks: "x" });
+    await updateVehicle(admin, v.id, { name: "Feldkochherd Test", internalNumber: "FKH-TEST", licensePlate: "oh-fk 1", typeId: type.id, checkIntervalValue: "1", remarks: "x" });
     expect((await db.vehicle.findUniqueOrThrow({ where: { id: v.id } })).licensePlate).toBe("OH-FK 1");
-    await updateVehicle(admin, v.id, { name: "Feldkochherd Test", internalNumber: "FKH-TEST", licensePlate: "", typeId: type.id, checkIntervalDays: "30", remarks: "" });
+    await updateVehicle(admin, v.id, { name: "Feldkochherd Test", internalNumber: "FKH-TEST", licensePlate: "", typeId: type.id, checkIntervalValue: "1", remarks: "" });
     const after = await db.vehicle.findUniqueOrThrow({ where: { id: v.id } });
     expect(after.licensePlate).toBeNull();
     expect(after.remarks).toBeNull();

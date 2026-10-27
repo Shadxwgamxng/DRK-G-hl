@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertOctagon, AlertTriangle, ClipboardCheck, Package, PackageX } from "lucide-react";
 import type { VehicleSummary } from "@/server/services/vehicles";
 import { daysUntil, fmtDate, plate } from "@/lib/format";
-import { DueBadge, VehicleStatusBadge } from "./status";
+import { CheckDue, DueBadge, VehicleStatusBadge } from "./status";
 import { Badge } from "./ui";
 
 const border: Record<string, string> = { READY: "border-l-green-600", LIMITED: "border-l-amber-500", NOT_READY: "border-l-drk-500", OUT_OF_SERVICE: "border-l-gray-400" };
@@ -31,7 +31,7 @@ export function VehicleCards({ vehicles }: { vehicles: VehicleSummary[] }) {
               </div>
               <div>
                 <dt className="text-xs text-gray-500">Nächste Kontrolle</dt>
-                <dd>{v.nextCheckDue ? <DueBadge date={v.nextCheckDue} days={v.nextCheckInDays} warnDays={1} /> : <span className="font-medium text-drk-700">jetzt</span>}</dd>
+                <dd><CheckDue v={v} /></dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-500">Nächste HU</dt>
@@ -48,7 +48,7 @@ export function VehicleCards({ vehicles }: { vehicles: VehicleSummary[] }) {
               <Badge tone={v.missingMaterials ? "orange" : "gray"} icon={<PackageX className="h-3.5 w-3.5" />}>{v.missingMaterials} fehlend</Badge>
               {v.expiredBatches > 0 && <Badge tone="red" icon={<Package className="h-3.5 w-3.5" />}>{v.expiredBatches} abgelaufen</Badge>}
               {v.expiringBatches > 0 && <Badge tone="yellow" icon={<Package className="h-3.5 w-3.5" />}>{v.expiringBatches} läuft bald ab</Badge>}
-              {!v.lastCheck && <Badge tone="yellow" icon={<ClipboardCheck className="h-3.5 w-3.5" />}>Kontrolle ausstehend</Badge>}
+              {v.checkState !== "ok" && <Badge tone={v.checkState === "overdue" ? "red" : "yellow"} icon={<ClipboardCheck className="h-3.5 w-3.5" />}>{v.checkState === "overdue" ? "Kontrolle überfällig" : "Monatskontrolle offen"}</Badge>}
             </div>
           </Link>
         </li>

@@ -133,32 +133,33 @@ model VehicleType {
 }
 
 model Vehicle {
-  id                String        @id @default(cuid())
-  name              String
-  radioCallSign     String?
-  internalNumber    String        @unique
-  licensePlate      String?       @unique // optional, z. B. für Feldkochherd oder noch nicht zugelassene Fahrzeuge
-  typeId            String
-  type              VehicleType   @relation(fields: [typeId], references: [id])
-  manufacturer      String?
-  model             String?
-  buildYear         Int?
-  firstRegistration DateTime?     @db.Date
-  mileage           Int?
-  location          String?
-  responsibleUserId String?
-  responsibleUser   User?         @relation("VehicleResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
-  status            VehicleStatus @default(READY)
-  statusReason      String?
-  statusChangedAt   DateTime?
-  remarks           String?
-  // Intervall der regelmäßigen Fahrzeugkontrolle in Tagen
-  checkIntervalDays Int           @default(7)
-  imageId           String?       @unique
-  image             Attachment?   @relation("VehicleImage", fields: [imageId], references: [id], onDelete: SetNull)
-  archivedAt        DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  id                 String        @id @default(cuid())
+  name               String
+  radioCallSign      String?
+  internalNumber     String        @unique
+  licensePlate       String?       @unique // optional, z. B. für Feldkochherd oder noch nicht zugelassene Fahrzeuge
+  typeId             String
+  type               VehicleType   @relation(fields: [typeId], references: [id])
+  manufacturer       String?
+  model              String?
+  buildYear          Int?
+  firstRegistration  DateTime?     @db.Date
+  mileage            Int?
+  location           String?
+  responsibleUserId  String?
+  responsibleUser    User?         @relation("VehicleResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  status             VehicleStatus @default(READY)
+  statusReason       String?
+  statusChangedAt    DateTime?
+  remarks            String?
+  // Intervall der regelmäßigen Fahrzeugkontrolle. Standard: 1 × pro Kalendermonat (fällig bis Monatsende)
+  checkIntervalValue Int           @default(1)
+  checkIntervalUnit  IntervalUnit  @default(MONTHS)
+  imageId            String?       @unique
+  image              Attachment?   @relation("VehicleImage", fields: [imageId], references: [id], onDelete: SetNull)
+  archivedAt         DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
   assignments    VehicleAssignment[]
   checks         VehicleCheck[]

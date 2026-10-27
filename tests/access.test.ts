@@ -85,9 +85,9 @@ describe("Registrierung, Freigabe und Fahrzeugzugriff (Abnahme 1–4, 14)", () =
     const ids = (await summarizeVehicles(admin)).map((v) => v.id);
     expect(ids).toEqual(expect.arrayContaining([a.id, b.id]));
     const type = await db.vehicleType.findFirstOrThrow();
-    const created = await createVehicle(admin, { name: "KTW 1", internalNumber: "K-1", licensePlate: "oh-rk 1", typeId: type.id, checkIntervalDays: "7" });
+    const created = await createVehicle(admin, { name: "KTW 1", internalNumber: "K-1", licensePlate: "oh-rk 1", typeId: type.id, checkIntervalValue: "1" });
     expect(created.licensePlate).toBe("OH-RK 1");
-    await expect(createVehicle(user, { name: "X", internalNumber: "X", licensePlate: "X", typeId: type.id, checkIntervalDays: 7 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(createVehicle(user, { name: "X", internalNumber: "X", licensePlate: "X", typeId: type.id, checkIntervalValue: 1 })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(setVehicleStatus(user, a.id, "NOT_READY", "test")).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 

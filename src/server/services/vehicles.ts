@@ -1,6 +1,7 @@
 import type { Prisma, VehicleStatus } from "@prisma/client";
 import { z, optDate, optInt, optText, reqInt, reqText, optId } from "@/lib/validation";
-import { addDays, berlinToday, daysUntil } from "@/lib/format";
+import { addDays, berlinToday } from "@/lib/format";
+import { checkState as checkStateFn, checkWarnDays as checkWarnDaysFn, nextCheckDue as nextCheckDueFn } from "@/lib/check-schedule";
 import { OPEN_DEFECT_STATUSES } from "@/lib/labels";
 import { db } from "../db";
 import type { Actor } from "../actor";
@@ -29,7 +30,8 @@ const vehicleSchema = z.object({
   location: optText(120),
   responsibleUserId: optId(),
   remarks: optText(4000),
-  checkIntervalDays: reqInt(1, 365),
+  checkIntervalValue: reqInt(1, 365),
+  checkIntervalUnit: z.preprocess((x) => (x === "" || x == null ? "MONTHS" : x), z.enum(["DAYS", "MONTHS"])),
 });
 
 export type VehicleSummary = Awaited<ReturnType<typeof summarizeVehicles>>[number];
@@ -66,7 +68,8 @@ export async function summarizeVehicles(actor: Actor, opts: { where?: Prisma.Veh
 
   return vehicles.map((v) => {
     const lastCheck = v.checks[0] ?? null;
-    const nextCheckDue = lastCheck ? addDays(berlinToday(lastCheck.performedAt), v.checkIntervalDays) : null;
+    const nextCheckDue = nextCheckDueFn(lastCheck?.performedAt, v.checkIntervalValue, v.checkIntervalUnit, new Date(), v.createdAt);
+    const check = checkStateFn(nextCheckDue, v.checkIntervalUnit);
     const hu = v.inspections.find((i) => i.type.key === "HU") ?? null;
     const nextMaintenance = v.inspections.find((i) => i.type.key !== "HU") ?? null;
     const vStocks = stocks.filter((s) => s.vehicleId === v.id);
@@ -75,7 +78,9 @@ export async function summarizeVehicles(actor: Actor, opts: { where?: Prisma.Veh
       ...v,
       lastCheck,
       nextCheckDue,
-      nextCheckInDays: lastCheck ? daysUntil(nextCheckDue) : null,
+      nextCheckInDays: check.days,
+      checkState: check.state,
+      checkWarnDays: checkWarnDaysFn(v.checkIntervalUnit),
       nextHu: hu,
       nextMaintenance,
       openDefects: defectGroups.find((g) => g.vehicleId === v.id)?._count ?? 0,
@@ -102,8 +107,8 @@ export async function getVehicle(actor: Actor, vehicleId: string) {
 }
 
 function pickSummary(s: VehicleSummary) {
-  const { lastCheck, nextCheckDue, nextCheckInDays, nextHu, nextMaintenance, openDefects, criticalDefects, missingMaterials, expiredBatches, expiringBatches } = s;
-  return { lastCheck, nextCheckDue, nextCheckInDays, nextHu, nextMaintenance, openDefects, criticalDefects, missingMaterials, expiredBatches, expiringBatches };
+  const { lastCheck, nextCheckDue, nextCheckInDays, checkState, checkWarnDays, nextHu, nextMaintenance, openDefects, criticalDefects, missingMaterials, expiredBatches, expiringBatches } = s;
+  return { lastCheck, nextCheckDue, nextCheckInDays, checkState, checkWarnDays, nextHu, nextMaintenance, openDefects, criticalDefects, missingMaterials, expiredBatches, expiringBatches };
 }
 
 async function validateRefs(d: z.infer<typeof vehicleSchema>) {

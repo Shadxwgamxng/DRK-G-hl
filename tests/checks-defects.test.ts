@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { db, makeUser, makeVehicle, newRef } from "./helpers";
+import { berlinToday } from "@/lib/format";
 import { amendCheck, checklistForVehicle, performCheck } from "@/server/services/checks";
 import { summarizeVehicles, setVehicleStatus } from "@/server/services/vehicles";
 import { changeDefectStatus, createDefect, getDefect } from "@/server/services/defects";
@@ -24,7 +25,11 @@ describe("Fahrzeugkontrolle (Abnahme 5)", () => {
     const [summary] = await summarizeVehicles(user, { where: { id: v.id } });
     expect(summary.lastCheck?.id).toBe(check.id);
     expect(summary.lastCheck?.performedBy.firstName).toBe("Test");
-    expect(summary.nextCheckInDays).toBe(7);
+    // 1 × pro Kalendermonat: nach einer Kontrolle heute ist die nächste bis Ende des Folgemonats fällig
+    const t = berlinToday();
+    const endNext = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 2, 0));
+    expect(summary.nextCheckDue.toISOString()).toBe(endNext.toISOString());
+    expect(summary.checkState).toBe("ok");
     expect((await db.vehicle.findUniqueOrThrow({ where: { id: v.id } })).mileage).toBe(12345);
   });
 

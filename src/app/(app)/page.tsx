@@ -7,7 +7,8 @@ import { Alert, Card, EmptyState, LinkButton, PageHeader, StatTile } from "@/com
 import { DueBadge } from "@/components/status";
 import { InstallHint } from "@/components/pwa";
 import { VehicleCards } from "@/components/vehicle-cards";
-import { daysUntil, fmtDate, fmtDateTime } from "@/lib/format";
+import { berlinToday, daysUntil, fmtDate, fmtDateTime } from "@/lib/format";
+import { monthName } from "@/lib/check-schedule";
 
 export const metadata = { title: "Übersicht" };
 
@@ -55,7 +56,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <StatTile label="Eingeschränkt" value={k.limited} tone={k.limited ? "yellow" : "gray"} icon={<AlertTriangle className="h-6 w-6" />} href="/fahrzeuge?status=LIMITED" />
             <StatTile label="Nicht einsatzbereit" value={k.notReady} tone={k.notReady ? "red" : "gray"} icon={<AlertOctagon className="h-6 w-6" />} href="/fahrzeuge?status=NOT_READY" />
             <StatTile label="Außer Dienst" value={k.outOfService} icon={<CircleSlash className="h-6 w-6" />} href="/fahrzeuge?status=OUT_OF_SERVICE" />
-            <StatTile label="Kontrollen heute fällig" value={k.checksDueToday} tone={k.checksDueToday ? "yellow" : "gray"} icon={<ClipboardCheck className="h-6 w-6" />} />
+            <StatTile label="Kontrollen fällig (Monat)" value={k.checksDueToday} tone={k.checksDueToday ? "yellow" : "gray"} hint="noch nicht kontrolliert" icon={<ClipboardCheck className="h-6 w-6" />} />
             <StatTile label="Kontrollen überfällig" value={k.checksOverdue} tone={k.checksOverdue ? "red" : "gray"} icon={<Timer className="h-6 w-6" />} />
             {can(actor, "inspections.view") && <StatTile label="HU/Wartung (30 Tage)" value={k.upcomingInspections} tone={k.overdueInspections ? "red" : k.upcomingInspections ? "yellow" : "gray"} hint={k.overdueInspections ? `${k.overdueInspections} überfällig` : undefined} icon={<CalendarClock className="h-6 w-6" />} href="/termine" />}
             <StatTile label="Offene Mängel" value={k.openDefects} tone={k.openDefects ? "orange" : "gray"} icon={<AlertTriangle className="h-6 w-6" />} href="/maengel" />
@@ -72,9 +73,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           </div>
 
           <div className="mt-6 grid gap-5 xl:grid-cols-2">
-            <Card title="Fällige Fahrzeugkontrollen">
+            <Card title={`Monatskontrollen – noch offen im ${monthName(berlinToday())}`}>
               {d.checksDue.length === 0 ? (
-                <p className="text-sm text-gray-600">Alle Fahrzeuge sind im Kontrollintervall.</p>
+                <p className="text-sm text-gray-600">Alle Fahrzeuge sind in diesem Monat kontrolliert.</p>
               ) : (
                 <ul className="divide-y divide-gray-100">
                   {d.checksDue.map((v) => (

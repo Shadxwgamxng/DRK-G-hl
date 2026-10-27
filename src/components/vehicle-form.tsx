@@ -19,7 +19,8 @@ type V = {
   location?: string | null;
   responsibleUserId?: string | null;
   remarks?: string | null;
-  checkIntervalDays?: number;
+  checkIntervalValue?: number;
+  checkIntervalUnit?: string;
 };
 
 export function VehicleForm({
@@ -43,7 +44,10 @@ export function VehicleForm({
         <TextInput label="Interne Fahrzeugnummer" name="internalNumber" defaultValue={vehicle.internalNumber} required />
         <TextInput label="Kennzeichen" name="licensePlate" defaultValue={vehicle.licensePlate ?? ""} autoCapitalize="characters" hint="Leer lassen bei Geräten ohne Zulassung (z. B. Feldkochherd)" />
         <SelectInput label="Fahrzeugtyp" name="typeId" defaultValue={vehicle.typeId} required placeholder="Bitte wählen" options={types.map((t) => ({ value: t.id, label: t.name }))} hint="Weitere Typen unter Einstellungen anlegen" />
-        <TextInput label="Kontrollintervall (Tage)" name="checkIntervalDays" type="number" inputMode="numeric" min={1} max={365} defaultValue={vehicle.checkIntervalDays ?? 7} required hint="Nach wie vielen Tagen die nächste Fahrzeugkontrolle fällig ist" />
+        <div className="grid grid-cols-2 gap-3">
+          <TextInput label="Kontrolle alle" name="checkIntervalValue" type="number" inputMode="numeric" min={1} max={365} defaultValue={vehicle.checkIntervalValue ?? 1} required />
+          <SelectInput label="Einheit" name="checkIntervalUnit" defaultValue={vehicle.checkIntervalUnit ?? "MONTHS"} options={[{ value: "MONTHS", label: "Kalendermonat(e)" }, { value: "DAYS", label: "Tag(e)" }]} hint="Standard: 1 × pro Kalendermonat – fällig bis Monatsende" />
+        </div>
         <TextInput label="Hersteller" name="manufacturer" defaultValue={vehicle.manufacturer ?? ""} />
         <TextInput label="Modell" name="model" defaultValue={vehicle.model ?? ""} />
         <TextInput label="Baujahr" name="buildYear" type="number" inputMode="numeric" defaultValue={vehicle.buildYear ?? ""} />

@@ -59,6 +59,7 @@ DATABASE_URL=…/drk_kfz_demo DEMO_MODE=true npm run db:demo
 
 - **Logo & Design:** Gestaltung nach dem DRK-Styleguide (styleguide.drk.de): Wort-Bild-Marke des Ortsvereins (`public/brand/drk-goehl-logo.png`) ausschließlich auf weißem Grund, digital mind. 60 px hoch mit Schutzzone; Web-Farbpalette (DRK-Rot, Dunkelrot, Dunkelblau, Mittel-/Volltonblau, Hellblau, Dunkel-/Mittel-/Hellgrau); Hausschrift Helvetica Neue mit Ersatzschriften Open Sans → Arial. Das App-Icon zeigt nur das Rotkreuz-Zeichen auf Weiß – bitte mit dem Landes-/Kreisverband abstimmen. Die Logovorlage ist nur 430×93 px; eine hochauflösende Datei/SVG sollte nachgereicht werden.
 - **Zugriff ohne Fahrzeugzuweisung = nichts sichtbar** (außer Administratoren mit „Alle Fahrzeuge sehen“).
+- **Fahrzeugkontrolle 1 × pro Kalendermonat** (Vorgabe OV Göhl, Standard für alle Fahrzeuge): fällig bis Monatsende, Erinnerung 7 Tage vor Monatsende, danach „überfällig“. Je Fahrzeug auf Tages- oder Mehrmonatsintervall umstellbar.
 - **Fahrzeugfreigabe nie automatisch:** Das Schließen eines Mangels ändert den Fahrzeugstatus nicht.
 - **Prüfintervalle ohne gesetzliche Voreinstellungen;** je Termin konfigurierbar, Erinnerungen standardmäßig 30/14/7 Tage.
 - **Medikamente** standardmäßig ausgeblendet; Freischaltung in den Einstellungen.

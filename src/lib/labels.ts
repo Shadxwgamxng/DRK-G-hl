@@ -14,7 +14,7 @@ export const VEHICLE_STATUS: Record<string, string> = {
 };
 
 export const CHECK_TYPE: Record<string, string> = {
-  ROUTINE: "Regelmäßige Kontrolle",
+  ROUTINE: "Monatskontrolle (regelmäßig)",
   SHIFT_START: "Dienstübernahme",
   AFTER_MISSION: "Nach Einsatz",
   EXTENDED: "Erweiterte Kontrolle",
