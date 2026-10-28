@@ -11,7 +11,15 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   applicationName: "KFZ-Warte",
   appleWebApp: { capable: true, title: "KFZ-Warte", statusBarStyle: "default" },
-  icons: { icon: [{ url: "/icons/favicon-32.png", sizes: "32x32" }, { url: "/icons/icon-192.png", sizes: "192x192" }], apple: "/icons/apple-touch-icon.png" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icons/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
   robots: { index: false, follow: false },
 };
 

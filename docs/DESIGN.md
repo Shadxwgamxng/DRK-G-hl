@@ -7,7 +7,7 @@ Grundlage: offizieller DRK-Styleguide, https://styleguide.drk.de (Basiselemente 
 - **Immer auf weißem Grund** („Das rote Kreuz steht immer auf weißem Grund“) – deshalb weiße Seitenleiste, weiße Kopfzeilen, kein invertiertes Logo.
 - **Digitale Mindesthöhe 60 px** (Sidebar 62 px, mobil 60 px, Anmeldung 72 px), Schutzzone ≥ eine Balkenbreite des Kreuzes.
 - PDF-Berichte: Logo rechts oben auf Weiß, ca. 12 mm hoch (Print-Minimum 10 mm).
-- Offen: App-Icon/Favicon zeigen nur das Rotkreuz-Zeichen auf Weiß → mit Kreis-/Landesverband abstimmen. Eine hochauflösende Logodatei (SVG/PDF) sollte die 430×93-px-Vorlage ersetzen.
+- App-Icon/Favicon: rundes Abzeichen „Bereitschaft Göhl – Deutsches Rotes Kreuz“ auf Weiß (`public/brand/bereitschaft-goehl-logo.png`, Vorlage vom Ortsverein). In der App selbst bleibt die Wort-Bild-Marke des Ortsvereins. Eine hochauflösende Logodatei (SVG/PDF) sollte die 430×93-px-Vorlage ersetzen.
 
 ## Farben (Webseite)
 | Rolle | Farbe | Tailwind |
