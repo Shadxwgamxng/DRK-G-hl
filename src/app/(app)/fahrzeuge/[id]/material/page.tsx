@@ -9,6 +9,7 @@ import { locationOptions } from "@/server/services/warehouse";
 import { notFoundOnError } from "@/server/page-helpers";
 import { Card, EmptyState } from "@/components/ui";
 import { ActionForm, InlineAction, SelectInput, SubmitButton, TextArea, TextInput } from "@/components/forms";
+import { SearchSelect } from "@/components/search-select";
 import { Breadcrumb, KindIcon, LocationCard, StatsBadges, StockTable, statsOf } from "@/components/loadout";
 import { createStockAction, markCheckedAction } from "@/app/actions/materials";
 import { copyLoadoutAction, createCompartmentAction, deleteCompartmentAction, updateCompartmentAction } from "@/app/actions/compartments";
@@ -48,13 +49,18 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
         ) : (
           <ActionForm action={createStockAction.bind(null, id)}>
             <div className="grid gap-4 md:grid-cols-3">
-              <SelectInput
+              <SearchSelect
                 label="Material"
                 name="materialId"
                 required
-                placeholder="Bitte wählen"
                 className="md:col-span-2"
-                options={materials.map((m) => ({ value: m.id, label: `${m.name} (${m.category.name}${m.batchTracked ? ", mit Verfallsdatum" : ""}${m.isNarcotic ? ", BtM" : ""})` }))}
+                placeholder="Material suchen, z. B. „dreiweg“ oder „vvk 18“"
+                hint={`${materials.length} Materialien im Katalog – Name, Kategorie oder Abkürzung eintippen`}
+                options={materials.map((m) => ({
+                  value: m.id,
+                  label: m.name,
+                  detail: [m.category.name, m.batchTracked && "mit Verfallsdatum", m.isEquipment && "Gerät", m.isNarcotic && "BtM", m.articleNumber && `Art.-Nr. ${m.articleNumber}`].filter(Boolean).join(" · "),
+                }))}
               />
               {fixedCompartmentId ? (
                 <input type="hidden" name="compartmentId" value={fixedCompartmentId} />
