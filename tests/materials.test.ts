@@ -57,7 +57,7 @@ describe("Material austragen und Nachfüllliste (Abnahme 8–12)", () => {
     // 10) Nachfüllliste zeigt Lagerort
     const list = await listRefills(lager, { vehicleId: v.id });
     expect(list[0].vehicleStock.refillLocation?.name).toBe("Regal 3");
-    expect(list[0].vehicleStock.compartment).toBe("Schrank 2, Fach B");
+    expect(list[0].vehicleStock.compartment).toBe("Schrank 2 › Fach B") // Freitext wird in Schrank › Fach übernommen;
   });
 
   it("verhindert, dass eine fremde oder falsche Charge belastet wird", async () => {

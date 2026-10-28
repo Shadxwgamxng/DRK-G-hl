@@ -2,6 +2,8 @@ import { requireActiveActor } from "@/server/auth/current";
 import { can } from "@/server/actor";
 import { getVehicleStock } from "@/server/services/materials";
 import { locationOptions } from "@/server/services/warehouse";
+import { compartmentOptions } from "@/server/services/compartments";
+import Link from "next/link";
 import { notFoundOnError } from "@/server/page-helpers";
 import { Alert, Badge, Card, DefinitionList, TableWrap } from "@/components/ui";
 import { ExpiryBadge, RefillStatusBadge } from "@/components/status";
@@ -17,7 +19,7 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
   const sp = await searchParams;
   const s = await notFoundOnError(() => getVehicleStock(actor, stockId));
   const manage = can(actor, "materials.manage");
-  const locations = manage ? await locationOptions() : [];
+  const [locations, places] = manage ? await Promise.all([locationOptions(), compartmentOptions(actor, id)]) : [[], []];
   const path = `/fahrzeuge/${id}/material/${stockId}`;
   const batchesWithStock = s.batches.filter((b) => b.quantity > 0);
   const activeRefill = s.refillRequests.find((r) => ["OPEN", "IN_PROGRESS", "PROVIDED"].includes(r.status));
@@ -30,7 +32,7 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
           items={[
             ["Aktueller Bestand / Soll", <span key="b" className="text-lg font-bold">{s.currentQuantity} / {s.targetQuantity} {s.material.unit}</span>],
             ["Mindestbestand", `${s.minQuantity} ${s.material.unit}`],
-            ["Lagerort im Fahrzeug", s.compartment ?? "–"],
+            ["Lagerort im Fahrzeug", s.compartmentId ? <Link key="l" href={`/fahrzeuge/${id}/material?ort=${s.compartmentId}`} className="text-link">{s.compartment}</Link> : "ohne Lagerort"],
             ["Nachfülllager", s.refillLocation ? `${s.refillLocation.warehouse.name}, ${s.refillLocation.name}` : "–"],
             ["Artikelnummer", s.material.articleNumber ?? "–"],
             ["Hersteller", s.material.manufacturer ?? "–"],
@@ -107,7 +109,7 @@ export default async function StockDetail({ params, searchParams }: { params: Pr
                 <TextInput label="Sollbestand" name="targetQuantity" type="number" min={0} defaultValue={s.targetQuantity} required />
                 <TextInput label="Mindestbestand" name="minQuantity" type="number" min={0} defaultValue={s.minQuantity} required />
               </div>
-              <TextInput label="Fach / Schrank / Tasche" name="compartment" defaultValue={s.compartment ?? ""} />
+              <SelectInput label="Lagerort (Schrank › Fach)" name="compartmentId" defaultValue={s.compartmentId ?? ""} placeholder="– ohne Lagerort –" options={places} />
               <SelectInput label="Nachfülllager" name="refillLocationId" defaultValue={s.refillLocationId ?? ""} placeholder="– kein –" options={locations.map((l) => ({ value: l.id, label: `${l.warehouse.name} – ${l.name}` }))} />
               <TextArea label="Bemerkungen" name="remarks" defaultValue={s.remarks ?? ""} rows={2} />
               <SubmitButton variant="secondary">Speichern</SubmitButton>

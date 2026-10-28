@@ -166,6 +166,7 @@ model Vehicle {
   inspections    Inspection[]
   maintenance    MaintenanceRecord[]
   stocks         VehicleMaterialStock[]
+  compartments   VehicleCompartment[]
   refillRequests RefillRequest[]
   defects        Defect[]
   attachments    Attachment[]           @relation("VehicleAttachments")
@@ -439,6 +440,35 @@ model Material {
   @@index([categoryId])
 }
 
+enum CompartmentKind {
+  CABINET // Schrank
+  DRAWER // Auszug / Schublade
+  BACKPACK // Rucksack
+  BAG // Tasche
+  BOX // Kiste / Box
+  SHELF // Regal / Ablage
+  COMPARTMENT // Fach
+  OTHER
+}
+
+// Lagerorte im Fahrzeug: Ebene 1 = Schrank/Behälter (parentId leer), Ebene 2 = Fach
+model VehicleCompartment {
+  id        String                 @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle                @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  parentId  String?
+  parent    VehicleCompartment?    @relation("CompartmentTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children  VehicleCompartment[]   @relation("CompartmentTree")
+  name      String
+  kind      CompartmentKind        @default(CABINET)
+  sortOrder Int                    @default(0)
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+  stocks    VehicleMaterialStock[]
+
+  @@index([vehicleId, parentId])
+}
+
 model VehicleMaterialStock {
   id               String                       @id @default(cuid())
   vehicleId        String
@@ -448,7 +478,10 @@ model VehicleMaterialStock {
   targetQuantity   Int // Sollbestand
   minQuantity      Int                          @default(0) // Mindestbestand
   currentQuantity  Int                          @default(0) // = Summe der Chargen bei chargengeführten Materialien
-  compartment      String? // Fach / Schrank / Tasche im Fahrzeug
+  // Lagerort im Fahrzeug: Schrank/Behälter oder Fach (zwei Ebenen)
+  compartmentId    String?
+  compartmentRef   VehicleCompartment?          @relation(fields: [compartmentId], references: [id], onDelete: SetNull)
+  compartment      String? // Anzeige-/Momentaufnahme „Schrank › Fach“
   // Externer Lagerort für Nachfüllmaterial
   refillLocationId String?
   refillLocation   StorageLocation?             @relation(fields: [refillLocationId], references: [id], onDelete: SetNull)
@@ -463,8 +496,10 @@ model VehicleMaterialStock {
   refillRequests   RefillRequest[]
   checkResults     VehicleCheckMaterialResult[]
 
-  @@unique([vehicleId, materialId])
+  // Eindeutigkeit (Fahrzeug, Material, Lagerort) unter aktiven Positionen: partieller Index in der Migration
+  @@index([vehicleId])
   @@index([materialId])
+  @@index([compartmentId])
 }
 
 model Warehouse {

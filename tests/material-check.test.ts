@@ -211,3 +211,22 @@ describe("Materialkatalog wieder entfernen", () => {
     await expect(removeMaterialCatalog(db, { execute: false, categories: ["Gibtsnicht"] })).rejects.toThrow("Unbekannte Kategorie");
   });
 });
+
+describe("Ersteinrichtung der Beladung", () => {
+  it("neue Position ohne Bestand erzeugt keine Nachfüllung; der Check gleicht die Nachfüllliste ab", async () => {
+    const { admin, user, v, checklist, results, sPlain, sDated, sDevice } = await setup();
+    const m = await makeMaterial({ name: "Kompresse" });
+    const fresh = await createVehicleStock(admin, v.id, { materialId: m.id, targetQuantity: 10, minQuantity: 0, compartment: "Fach 1" });
+    expect(await db.refillRequest.count({ where: { vehicleStockId: fresh.id } })).toBe(0);
+    const materials = [sPlain, sDated, sDevice].map((s) => ({ stockId: s.id, status: "OK" }));
+    await performCheck(user, v.id, {
+      checklistId: checklist.id,
+      checkType: "ROUTINE",
+      results,
+      materialsLoadedAt: new Date().toISOString(),
+      materials: [...materials, { stockId: fresh.id, status: "DEVIATION", counted: "7" }],
+    });
+    const r = await db.refillRequest.findFirstOrThrow({ where: { vehicleStockId: fresh.id, status: "OPEN" } });
+    expect(r.requestedQuantity).toBe(3);
+  });
+});

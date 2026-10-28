@@ -28,7 +28,7 @@ export type MaterialState = {
   note?: string;
 };
 
-const NO_COMPARTMENT = "Ohne Fachangabe";
+const NO_COMPARTMENT = "Ohne Lagerort";
 
 /** Wandelt den Formularzustand in die Nutzdaten für den Server um. */
 export function materialPayload(stocks: CheckStock[], state: Record<string, MaterialState>) {

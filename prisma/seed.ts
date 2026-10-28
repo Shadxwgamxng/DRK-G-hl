@@ -5,6 +5,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { PERMISSIONS, SYSTEM_ROLES } from "../src/server/permissions";
+import { migrateLegacyCompartments } from "../src/server/services/compartments";
 
 const db = new PrismaClient();
 
@@ -131,6 +132,9 @@ async function main() {
       console.log(`✔ Administrator „${username}“ angelegt. Bitte Passwort nach der ersten Anmeldung ändern.`);
     }
   }
+  // Freitext-Fächer früherer Versionen in die Schrank-/Fach-Struktur übernehmen
+  const moved = await migrateLegacyCompartments();
+  if (moved) console.log(`✔ ${moved} Materialposition(en) in die Schrank-/Fach-Struktur übernommen.`);
   console.log("✔ Basisdaten eingerichtet.");
 }
 

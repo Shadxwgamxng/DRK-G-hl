@@ -146,3 +146,14 @@ export const CHECK_MATERIAL_STATUS: Record<string, string> = {
   MISSING: "Fehlt",
   DEFECT: "Defekt (Mangel gemeldet)",
 };
+
+export const COMPARTMENT_KIND: Record<string, string> = {
+  CABINET: "Schrank",
+  DRAWER: "Auszug / Schublade",
+  BACKPACK: "Rucksack",
+  BAG: "Tasche / Koffer",
+  BOX: "Kiste / Box",
+  SHELF: "Regal / Ablage",
+  COMPARTMENT: "Fach",
+  OTHER: "Sonstiges",
+};

@@ -12,6 +12,8 @@ import { notify, recipientsFor } from "../notifications";
 import { getSettings } from "../settings";
 import { parse } from "../validate";
 import { materialVisibility } from "../material-visibility";
+import type { Tx } from "../db";
+import { compartmentLabel, ensureCompartmentPath, splitCompartmentText } from "./compartments";
 import { linkAttachments } from "./attachments";
 import { changeBatch, changeVehicleQuantity, createMovement, findOrCreateBatch, lockVehicleStock, syncRefillRequest } from "./stock-core";
 
@@ -202,10 +204,31 @@ const stockSchema = z.object({
   materialId: z.string().min(1, "Bitte Material wählen"),
   targetQuantity: reqInt(0, 100000),
   minQuantity: reqInt(0, 100000),
-  compartment: optText(120),
+  compartmentId: optId(), // Schrank/Behälter oder Fach
+  compartment: optText(120), // alternativ Freitext „Schrank – Fach“ (Import, Altdaten)
   refillLocationId: optId(),
   remarks: optText(2000),
 });
+
+/** Ermittelt den Lagerort (ID + Anzeige „Schrank › Fach“) und prüft, dass er zum Fahrzeug gehört. */
+async function resolveCompartment(tx: Tx, vehicleId: string, d: { compartmentId?: string; compartment?: string }) {
+  if (d.compartmentId) {
+    const c = await tx.vehicleCompartment.findFirst({ where: { id: d.compartmentId, vehicleId }, include: { parent: true } });
+    if (!c) throw invalid("Lagerort ungültig", { compartmentId: "Gehört nicht zu diesem Fahrzeug" });
+    return { compartmentId: c.id, compartment: compartmentLabel(c) };
+  }
+  if (d.compartment) {
+    const [container, fach] = splitCompartmentText(d.compartment);
+    const c = await ensureCompartmentPath(tx, vehicleId, container, fach);
+    return { compartmentId: c.id, compartment: fach ? `${container} › ${fach}` : container };
+  }
+  return { compartmentId: null, compartment: null };
+}
+
+async function assertNoDuplicateStock(tx: Tx, vehicleId: string, materialId: string, compartmentId: string | null, exceptId?: string) {
+  const dup = await tx.vehicleMaterialStock.findFirst({ where: { vehicleId, materialId, compartmentId, active: true, ...(exceptId ? { id: { not: exceptId } } : {}) } });
+  if (dup) throw invalid("Dieses Material ist an diesem Lagerort bereits angelegt.", { materialId: "Bereits vorhanden" });
+}
 
 export async function createVehicleStock(
   actor: Actor,
@@ -221,11 +244,14 @@ export async function createVehicleStock(
   if (!material || material.archived) throw invalid("Material ungültig", { materialId: "Ungültig" });
   if (material.isNarcotic) requirePermission(actor, "materials.btm");
   await assertCategoryAllowed(material.categoryId);
-  if (await db.vehicleMaterialStock.findUnique({ where: { vehicleId_materialId: { vehicleId, materialId: d.materialId } } }))
-    throw invalid("Dieses Material ist im Fahrzeug bereits angelegt.", { materialId: "Bereits vorhanden" });
 
   return db.$transaction(async (tx) => {
-    const stock = await tx.vehicleMaterialStock.create({ data: { ...d, vehicleId, currentQuantity: 0 } });
+    const loc = await resolveCompartment(tx, vehicleId, d);
+    await assertNoDuplicateStock(tx, vehicleId, d.materialId, loc.compartmentId);
+    const { compartmentId: _c, compartment: _t, ...rest } = d;
+    void _c;
+    void _t;
+    const stock = await tx.vehicleMaterialStock.create({ data: { ...rest, ...loc, vehicleId, currentQuantity: 0 } });
     await audit(actor, { action: "stock.create", entityType: "VehicleMaterialStock", entityId: stock.id, vehicleId, newValues: { material: material.name, ...d } }, tx);
     // Anfangsbestand wird als nachvollziehbare Bestandskorrektur gebucht
     if (material.batchTracked) {
@@ -240,7 +266,9 @@ export async function createVehicleStock(
       await changeVehicleQuantity(tx, stock.id, initial.quantity);
       await createMovement(tx, actor, { type: "CORRECTION", materialId: material.id, quantity: initial.quantity, toVehicleStockId: stock.id, note: "Anfangsbestand" });
     }
-    await syncRefillRequest(tx, actor, stock.id, `Neu angelegt in ${vehicle.name}`);
+    // Ohne Anfangsbestand noch kein Nachfüllbedarf – der tatsächliche Bestand wird beim ersten Check erfasst
+    const initialTotal = (initial?.quantity ?? 0) + (initial?.batches ?? []).reduce((n, b) => n + (b.quantity || 0), 0);
+    if (initialTotal > 0) await syncRefillRequest(tx, actor, stock.id, `Neu angelegt in ${vehicle.name}`);
     return stock;
   });
 }
@@ -250,10 +278,18 @@ export async function updateVehicleStock(actor: Actor, stockId: string, input: u
   const before = await getVehicleStock(actor, stockId);
   const d = parse(stockSchema.omit({ materialId: true }), input);
   if (d.minQuantity > d.targetQuantity) throw invalid("Mindestbestand darf den Sollbestand nicht übersteigen.", { minQuantity: "Größer als Sollbestand" });
-  const data = { ...d, compartment: d.compartment ?? null, refillLocationId: d.refillLocationId ?? null, remarks: d.remarks ?? null };
-  const { oldValues, newValues, changed } = diff(before as unknown as Record<string, unknown>, data);
-  if (!changed) return;
   await db.$transaction(async (tx) => {
+    // Lagerort nur ändern, wenn er mitgeschickt wurde (leer = „ohne Lagerort“)
+    const sendsLocation = typeof input === "object" && input !== null && ("compartmentId" in input || "compartment" in input);
+    const loc = !sendsLocation
+      ? { compartmentId: before.compartmentId, compartment: before.compartment }
+      : d.compartmentId || d.compartment
+        ? await resolveCompartment(tx, before.vehicleId, d)
+        : { compartmentId: null, compartment: null };
+    const data = { targetQuantity: d.targetQuantity, minQuantity: d.minQuantity, ...loc, refillLocationId: d.refillLocationId ?? null, remarks: d.remarks ?? null };
+    const { oldValues, newValues, changed } = diff(before as unknown as Record<string, unknown>, data);
+    if (!changed) return;
+    if (loc.compartmentId !== before.compartmentId) await assertNoDuplicateStock(tx, before.vehicleId, before.materialId, loc.compartmentId, stockId);
     await lockVehicleStock(tx, stockId);
     await tx.vehicleMaterialStock.update({ where: { id: stockId }, data });
     await audit(actor, { action: "stock.update", entityType: "VehicleMaterialStock", entityId: stockId, vehicleId: before.vehicleId, oldValues, newValues }, tx);

@@ -16,7 +16,8 @@ export async function createStockAction(vehicleId: string, _: ActionState, fd: F
     if (initial.quantity !== undefined && (!Number.isInteger(initial.quantity) || initial.quantity < 0)) return { ok: false, fieldErrors: { initialQuantity: "Ganze Zahl ≥ 0" }, message: "Bitte Eingaben prüfen." };
     id = (await createVehicleStock(actor, vehicleId, o, initial)).id;
   });
-  if (res.ok && id) redirect(`/fahrzeuge/${vehicleId}/material/${id}?neu=1`);
+  // im Schrank/Fach angelegt → dort bleiben, sonst zur neuen Position
+  if (res.ok && id) redirect(o.compartmentId ? `/fahrzeuge/${vehicleId}/material?ort=${o.compartmentId}` : `/fahrzeuge/${vehicleId}/material/${id}?neu=1`);
   return res;
 }
 
