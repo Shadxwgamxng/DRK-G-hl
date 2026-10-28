@@ -31,6 +31,7 @@ npx prisma migrate deploy         # Schema + Integritätsregeln (Trigger, CHECKs
 npm run db:seed                   # Rollen, Rechte, Stammdaten, Erst-Administrator
 npm run db:fahrzeuge              # Fahrzeugbestand DRK OV Göhl anlegen (mehrfach ausführbar, überschreibt nichts)
 npm run db:materialkatalog        # Standard-Materialkatalog (293 Artikel) anlegen (mehrfach ausführbar)
+npm run db:materialkatalog:entfernen -- --ausfuehren   # Katalog wieder entfernen (ohne --ausfuehren nur Anzeige)
 npm run dev                       # http://localhost:3000
 ```
 

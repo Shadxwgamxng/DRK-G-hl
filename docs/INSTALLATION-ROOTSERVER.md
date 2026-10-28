@@ -106,6 +106,7 @@ Dann `cd /opt/drk-kfz-warte/deploy && docker compose up -d` und in der App unter
 | Erinnerungen manuell | `docker compose exec app npx tsx scripts/run-reminders.ts` |
 | Passwort zurücksetzen (Notfall) | `docker compose exec app npx tsx scripts/reset-password.ts BENUTZERNAME` |
 | Materialkatalog importieren / ergänzen | `docker compose exec app npx tsx prisma/materialkatalog.ts` (legt nur Fehlendes an) |
+| Materialkatalog wieder entfernen | `docker compose exec app npx tsx prisma/materialkatalog-entfernen.ts` zeigt an, was passieren würde; mit `--ausfuehren` wird es umgesetzt, mit `--kategorie "Medikamente"` nur eine Kategorie. Unbenutztes wird gelöscht, Verwendetes archiviert |
 | Fahrzeugbestand erneut abgleichen | `docker compose exec app npx tsx prisma/fahrzeuge-goehl.ts` (legt nur Fehlendes an) |
 
 ### Backups

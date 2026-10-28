@@ -17,7 +17,8 @@
     "reminders": "tsx scripts/run-reminders.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:materialkatalog": "tsx prisma/materialkatalog.ts"
+    "db:materialkatalog": "tsx prisma/materialkatalog.ts",
+    "db:materialkatalog:entfernen": "tsx prisma/materialkatalog-entfernen.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -179,3 +179,35 @@ describe("Betäubungsmittel (BtM)", () => {
     }
   });
 });
+
+describe("Materialkatalog wieder entfernen", () => {
+  it("zeigt zuerst nur an, löscht dann Unbenutztes und archiviert Verwendetes", async () => {
+    const { removeMaterialCatalog } = await import("../prisma/materialkatalog-entfernen");
+    await importMaterialCatalog(db);
+    const admin = await makeUser("ADMIN");
+    const v = await makeVehicle();
+    const used = await db.material.findFirstOrThrow({ where: { name: "Dreiecktuch" } });
+    await createVehicleStock(admin, v.id, { materialId: used.id, targetQuantity: 2, minQuantity: 0, compartment: "Fach 1" }, { quantity: 2 });
+
+    // Probelauf ändert nichts
+    const dry = await removeMaterialCatalog(db, { execute: false, categories: ["Verbandmaterial"] });
+    expect(dry.archived).toBe(1);
+    expect(await db.material.count({ where: { name: "Mullbinde 8 cm" } })).toBe(1);
+
+    // nur eine Kategorie
+    const r = await removeMaterialCatalog(db, { execute: true, categories: ["Verbandmaterial"] });
+    expect(r.deleted).toBe(dry.deleted);
+    expect(await db.material.count({ where: { name: "Mullbinde 8 cm" } })).toBe(0);
+    expect((await db.material.findUniqueOrThrow({ where: { id: used.id } })).archived).toBe(true);
+    expect(await db.material.count({ where: { name: "Adrenalin 1 mg/1 ml" } })).toBe(1);
+
+    // alles; leere Katalog-Kategorien verschwinden, Basiskategorien bleiben
+    await removeMaterialCatalog(db, { execute: true });
+    expect(await db.material.count({ where: { name: "Adrenalin 1 mg/1 ml" } })).toBe(0);
+    expect(await db.materialCategory.count({ where: { name: "Trauma und Immobilisation" } })).toBe(0);
+    expect(await db.materialCategory.count({ where: { name: "Verbandmaterial" } })).toBe(1);
+    expect(await db.vehicleMaterialStock.count({ where: { materialId: used.id } })).toBe(1);
+
+    await expect(removeMaterialCatalog(db, { execute: false, categories: ["Gibtsnicht"] })).rejects.toThrow("Unbekannte Kategorie");
+  });
+});
