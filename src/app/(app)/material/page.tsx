@@ -26,7 +26,7 @@ function MaterialFields({ categories, m, btm }: { categories: Cat[]; m?: M; btm:
       <TextArea label="Beschreibung" name="description" defaultValue={m?.description ?? ""} rows={2} />
       <TextArea label="Bemerkungen" name="remarks" defaultValue={m?.remarks ?? ""} rows={2} />
       <div className="grid gap-2 md:grid-cols-3">
-        <Checkbox name="batchTracked" label="Mit Verfallsdatum" hint="Bestand wird je Verfallsdatum geführt. Chargennummer optional (bei BtM Pflicht)." defaultChecked={m?.batchTracked} />
+        <Checkbox name="batchTracked" label="Mit Verfallsdatum" hint="Bestand wird je Verfallsdatum geführt (Chargennr. optional, bei BtM Pflicht). Jederzeit umschaltbar – vorhandener Bestand wird übernommen." defaultChecked={m?.batchTracked} />
         <Checkbox name="isEquipment" label="Gerät / Ausstattung" hint="Bei der Kontrolle: „vorhanden & funktioniert“ oder „defekt“ (wird als Mangel gemeldet)." defaultChecked={m?.isEquipment} />
         {btm && <Checkbox name="isNarcotic" label="Betäubungsmittel (BtM)" hint="Nur für Personen mit BtM-Recht sichtbar; Chargennummer ist Pflicht." defaultChecked={m?.isNarcotic} />}
       </div>

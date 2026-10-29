@@ -108,22 +108,39 @@ export async function updateMaterial(actor: Actor, id: string, input: unknown, i
   if (before.isNarcotic) requirePermission(actor, "materials.btm");
   const d = { ...normalizeMaterialFlags(actor, parse(materialSchema, input), before), archived: parse(z.object({ archived: checkbox() }), input).archived };
   await assertCategoryAllowed(d.categoryId);
-  if (before.batchTracked && !d.batchTracked) {
-    const batches = await db.materialBatch.count({ where: { materialId: id, quantity: { gt: 0 } } });
-    if (batches) throw invalid("„Mit Verfallsdatum“ kann nicht abgeschaltet werden, solange Bestand mit Verfallsdatum vorhanden ist.", { batchTracked: "Bestand vorhanden" });
-  }
-  if (!before.batchTracked && d.batchTracked) {
-    const stocked = await db.vehicleMaterialStock.count({ where: { materialId: id, currentQuantity: { gt: 0 } } });
-    const wStocked = await db.warehouseStock.count({ where: { materialId: id, quantity: { gt: 0 } } });
-    if (stocked || wStocked)
-      throw invalid("„Mit Verfallsdatum“ kann nur eingeschaltet werden, solange kein Bestand vorhanden ist.", { batchTracked: "Bestand vorhanden" });
-  }
   const { oldValues, newValues, changed } = diff(before as unknown as Record<string, unknown>, { ...d, articleNumber: d.articleNumber ?? null });
   await db.$transaction(async (tx) => {
     await tx.material.update({ where: { id }, data: { ...d, articleNumber: d.articleNumber ?? null, description: d.description ?? null, manufacturer: d.manufacturer ?? null, remarks: d.remarks ?? null } });
+    if (before.batchTracked !== d.batchTracked) await convertBatchTracking(tx, actor, id, d.batchTracked);
     if (imageId) await setMaterialImage(tx, actor, id, imageId);
     if (changed) await audit(actor, { action: "master.update", entityType: "Material", entityId: id, oldValues, newValues }, tx);
   });
+}
+
+/**
+ * „Mit Verfallsdatum“ nachträglich ein- oder ausschalten – auch wenn bereits Bestand vorhanden ist.
+ *  - Einschalten: vorhandener Bestand wird je Fahrzeug-/Lagerposition als „ohne Verfallsdatum“ übernommen;
+ *    die echten Daten werden bei der nächsten Kontrolle bzw. Inventur erfasst.
+ *  - Ausschalten: Mengen bleiben unverändert, die Aufteilung nach Verfallsdatum entfällt (keine Ablaufwarnungen mehr).
+ */
+async function convertBatchTracking(tx: Prisma.TransactionClient, actor: Actor, materialId: string, enable: boolean) {
+  // Bestände sperren, damit parallel keine Buchung dazwischenkommt
+  await tx.$queryRaw`SELECT id FROM "VehicleMaterialStock" WHERE "materialId" = ${materialId} FOR UPDATE`;
+  await tx.$queryRaw`SELECT id FROM "WarehouseStock" WHERE "materialId" = ${materialId} FOR UPDATE`;
+  if (enable) {
+    const [vs, ws] = await Promise.all([
+      tx.vehicleMaterialStock.findMany({ where: { materialId, currentQuantity: { gt: 0 } } }),
+      tx.warehouseStock.findMany({ where: { materialId, quantity: { gt: 0 } } }),
+    ]);
+    // eventuell noch vorhandene Alt-Chargen leeren, damit Summe der Chargen = Bestand gilt
+    await tx.materialBatch.updateMany({ where: { materialId, quantity: { gt: 0 } }, data: { quantity: 0 } });
+    for (const s of vs) await tx.materialBatch.create({ data: { materialId, vehicleStockId: s.id, quantity: s.currentQuantity } });
+    for (const w of ws) await tx.materialBatch.create({ data: { materialId, warehouseStockId: w.id, quantity: w.quantity } });
+    await audit(actor, { action: "material.batch_tracking_on", entityType: "Material", entityId: materialId, newValues: { vehiclePositions: vs.length, warehousePositions: ws.length, note: "Bestand ohne Verfallsdatum übernommen" } }, tx);
+  } else {
+    const res = await tx.materialBatch.updateMany({ where: { materialId, quantity: { gt: 0 } }, data: { quantity: 0 } });
+    await audit(actor, { action: "material.batch_tracking_off", entityType: "Material", entityId: materialId, newValues: { batchesCleared: res.count, note: "Mengen unverändert, Verfallsdaten nicht mehr geführt" } }, tx);
+  }
 }
 
 async function setMaterialImage(tx: Prisma.TransactionClient, actor: Actor, materialId: string, attachmentId: string) {

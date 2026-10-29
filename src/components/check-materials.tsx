@@ -179,7 +179,7 @@ export function CheckMaterials({
                           const tone = d && d < today ? "red" : d && d <= soon ? "yellow" : "gray";
                           return (
                             <Badge key={b.id} tone={tone}>
-                              {b.quantity} × bis {fmtDate(b.expiryDate)}
+                              {b.quantity} × {b.expiryDate ? `bis ${fmtDate(b.expiryDate)}` : "Verfallsdatum noch nicht erfasst"}
                               {b.batchNumber ? ` · Ch. ${b.batchNumber}` : ""}
                               {tone === "red" ? " – abgelaufen" : ""}
                             </Badge>
@@ -201,6 +201,9 @@ export function CheckMaterials({
                         </ChoiceButton>
                       )}
                     </div>
+                    {!m.status && s.batches.some((b) => !b.expiryDate) && (
+                      <p className="mt-2 text-sm text-drkblue-900">Tipp: Unter „Abweichung“ bei „ohne“ 0 eintragen und die Stücke mit ihrem Verfallsdatum neu erfassen.</p>
+                    )}
                     {m.status === "OK" && expired.length > 0 && (
                       <p className="mt-2 text-sm font-semibold text-drk-700">Abgelaufene Stücke vorhanden – bitte unter „Abweichung“ als entnommen markieren.</p>
                     )}

@@ -3,7 +3,7 @@ import { db, makeMaterial, makeUser, makeVehicle, newRef } from "./helpers";
 import { addDays, berlinToday, toDateInput } from "@/lib/format";
 import { checklistForVehicle, getCheck, performCheck } from "@/server/services/checks";
 import { materialsForCheck } from "@/server/services/check-materials";
-import { createVehicleStock, listMaterials } from "@/server/services/materials";
+import { createVehicleStock, listMaterials, writeOffMaterial } from "@/server/services/materials";
 import { CATALOG_ITEMS, importMaterialCatalog } from "../prisma/material-catalog";
 
 async function setup() {
@@ -260,5 +260,30 @@ describe("„Vollständig“ bei der Kontrolle (Soll-Menge vorhanden)", () => {
     expect((await db.refillRequest.findFirstOrThrow({ where: { vehicleStockId: sH.id } })).status).toBe("CANCELLED");
     const res = await db.vehicleCheckMaterialResult.findFirstOrThrow({ where: { vehicleStockId: sH.id } });
     expect(res).toMatchObject({ status: "OK", previousQuantity: 0, countedQuantity: 4 });
+  });
+});
+
+describe("„Mit Verfallsdatum“ nachträglich umschalten", () => {
+  it("übernimmt vorhandenen Bestand beim Einschalten und behält die Mengen beim Ausschalten", async () => {
+    const { updateMaterial } = await import("@/server/services/materials");
+    const admin = await makeUser("ADMIN");
+    const v = await makeVehicle();
+    const m = await makeMaterial({ name: "Spritze" });
+    const s = await createVehicleStock(admin, v.id, { materialId: m.id, targetQuantity: 6, minQuantity: 0, compartment: "Fach 1" }, { quantity: 5 });
+    const form = { name: m.name, categoryId: m.categoryId, unit: m.unit };
+
+    await updateMaterial(admin, m.id, { ...form, batchTracked: "on" });
+    const on = await db.vehicleMaterialStock.findUniqueOrThrow({ where: { id: s.id }, include: { batches: true } });
+    expect(on.currentQuantity).toBe(5);
+    expect(on.batches.filter((b) => b.quantity > 0)).toEqual([expect.objectContaining({ quantity: 5, expiryDate: null })]);
+
+    // danach normal mit Verfallsdatum buchen (Austragen aus der übernommenen Menge)
+    await writeOffMaterial(admin, { stockId: s.id, quantity: "1", reason: "USED", batchId: on.batches[0].id });
+
+    await updateMaterial(admin, m.id, { ...form });
+    const off = await db.vehicleMaterialStock.findUniqueOrThrow({ where: { id: s.id }, include: { batches: true } });
+    expect(off.currentQuantity).toBe(4);
+    expect(off.batches.every((b) => b.quantity === 0)).toBe(true);
+    expect((await db.material.findUniqueOrThrow({ where: { id: m.id } })).batchTracked).toBe(false);
   });
 });
