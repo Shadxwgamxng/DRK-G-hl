@@ -1,6 +1,6 @@
 # Abnahmetests
 
-Automatisierte Integrationstests laufen mit Vitest gegen eine echte PostgreSQL-Testdatenbank (inkl. Triggern und Constraints): `npm test`. Stand: **49 Tests, alle bestanden.**
+Automatisierte Integrationstests laufen mit Vitest gegen eine echte PostgreSQL-Testdatenbank (inkl. Triggern und Constraints): `npm test`. Stand: **50 Tests, alle bestanden.**
 
 | Nr. | Szenario | Nachweis |
 |---|---|---|

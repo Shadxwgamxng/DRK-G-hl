@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { Check, Pencil, Plus, Trash2, Wrench } from "lucide-react";
+import { Check, MapPin, Pencil, Plus, Trash2, Wrench } from "lucide-react";
 import { fmtDate } from "@/lib/format";
 import { Alert, Badge } from "./ui";
 
@@ -10,6 +10,8 @@ export type CheckStock = {
   name: string;
   unit: string;
   compartment: string | null;
+  /** Ortshinweis(e) von Schrank und Fach */
+  locationHint?: string | null;
   category: string;
   target: number;
   current: number;
@@ -132,7 +134,15 @@ export function CheckMaterials({
         return (
           <div key={compartment} className="card overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-drkblue-50 px-4 py-2">
-              <h4 className="font-bold text-drkblue-900">{compartment}</h4>
+              <div className="min-w-0">
+                <h4 className="font-bold text-drkblue-900">{compartment}</h4>
+                {list[0].locationHint && (
+                  <p className="mt-0.5 flex gap-1.5 whitespace-pre-line text-sm text-drkblue-900">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                    {list[0].locationHint}
+                  </p>
+                )}
+              </div>
               <div className="flex items-center gap-3 text-sm">
                 <span>{list.length - open.length} / {list.length}</span>
                 {quick.length > 0 && (

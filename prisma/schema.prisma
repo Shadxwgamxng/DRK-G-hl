@@ -453,18 +453,20 @@ enum CompartmentKind {
 
 // Lagerorte im Fahrzeug: Ebene 1 = Schrank/Behälter (parentId leer), Ebene 2 = Fach
 model VehicleCompartment {
-  id        String                 @id @default(cuid())
-  vehicleId String
-  vehicle   Vehicle                @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
-  parentId  String?
-  parent    VehicleCompartment?    @relation("CompartmentTree", fields: [parentId], references: [id], onDelete: Restrict)
-  children  VehicleCompartment[]   @relation("CompartmentTree")
-  name      String
-  kind      CompartmentKind        @default(CABINET)
-  sortOrder Int                    @default(0)
-  createdAt DateTime               @default(now())
-  updatedAt DateTime               @updatedAt
-  stocks    VehicleMaterialStock[]
+  id          String                 @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle                @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  parentId    String?
+  parent      VehicleCompartment?    @relation("CompartmentTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children    VehicleCompartment[]   @relation("CompartmentTree")
+  name        String
+  // Hinweis zum Ort, z. B. „hinter der Trage, rechte Seite unten“
+  description String?
+  kind        CompartmentKind        @default(CABINET)
+  sortOrder   Int                    @default(0)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  stocks      VehicleMaterialStock[]
 
   @@index([vehicleId, parentId])
 }

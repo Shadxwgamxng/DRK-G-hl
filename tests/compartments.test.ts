@@ -96,3 +96,32 @@ describe("Schränke und Fächer im Fahrzeug", () => {
     expect(await copyLoadout(admin, v1.id, v2.id)).toMatchObject({ compartments: 0, positions: 0 });
   });
 });
+
+describe("Beschreibung von Schränken und Fächern", () => {
+  it("speichert, behält und kopiert den Ortshinweis und zeigt ihn beim Check", async () => {
+    const admin = await makeUser("ADMIN");
+    const v = await makeVehicle("RTW");
+    const schrank = await createCompartment(admin, v.id, { name: "Seitenschrank", kind: "CABINET", description: "Patientenraum links, unter der Arbeitsfläche" });
+    const fach = await createCompartment(admin, v.id, { name: "Fach 2", parentId: schrank.id, description: "hinter den Infusionen" });
+    expect(fach.description).toBe("hinter den Infusionen");
+    // ohne Beschreibung im Aufruf bleibt sie erhalten, leer mitgeschickt wird sie entfernt
+    await updateCompartment(admin, fach.id, { name: "Fach 2", parentId: schrank.id });
+    expect((await db.vehicleCompartment.findUniqueOrThrow({ where: { id: fach.id } })).description).toBe("hinter den Infusionen");
+    await updateCompartment(admin, fach.id, { name: "Fach 2", parentId: schrank.id, description: "rechts hinten" });
+    expect((await db.vehicleCompartment.findUniqueOrThrow({ where: { id: fach.id } })).description).toBe("rechts hinten");
+
+    const m = await makeMaterial();
+    await createVehicleStock(admin, v.id, { materialId: m.id, targetQuantity: 1, minQuantity: 0, compartmentId: fach.id });
+    const { stocks } = await materialsForCheck(admin, v.id);
+    expect(stocks[0].compartmentRef?.description).toBe("rechts hinten");
+    expect(stocks[0].compartmentRef?.parent?.description).toBe("Patientenraum links, unter der Arbeitsfläche");
+
+    const v2 = await makeVehicle("RTW 2");
+    await copyLoadout(admin, v.id, v2.id);
+    const copied = await db.vehicleCompartment.findFirstOrThrow({ where: { vehicleId: v2.id, name: "Fach 2" } });
+    expect(copied.description).toBe("rechts hinten");
+
+    await updateCompartment(admin, fach.id, { name: "Fach 2", parentId: schrank.id, description: "" });
+    expect((await db.vehicleCompartment.findUniqueOrThrow({ where: { id: fach.id } })).description).toBeNull();
+  });
+});

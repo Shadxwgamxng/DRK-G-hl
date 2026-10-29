@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Archive, Backpack, Boxes, Briefcase, ChevronRight, FolderOpen, Inbox, Package, Rows3 } from "lucide-react";
+import { Archive, Backpack, Boxes, Briefcase, ChevronRight, FolderOpen, Inbox, MapPin, Package, Rows3 } from "lucide-react";
 import { Badge, TableWrap } from "./ui";
 import { RefillStatusBadge } from "./status";
 import { fmtDate } from "@/lib/format";
@@ -50,13 +50,26 @@ export function StatsBadges({ s }: { s: LocationStats }) {
 }
 
 /** Kachel für einen Schrank/Behälter oder ein Fach. */
-export function LocationCard({ href, name, kind, detail, stats }: { href: string; name: string; kind: string; detail: string; stats: LocationStats }) {
+/** Beschreibung / Ortshinweis eines Schranks oder Fachs. */
+export function LocationHint({ texts, compact = false }: { texts: (string | null | undefined | false)[]; compact?: boolean }) {
+  const lines = texts.filter(Boolean) as string[];
+  if (!lines.length) return null;
+  return (
+    <div className={compact ? "mt-1 flex gap-1.5 text-xs text-gray-600" : "flex gap-2 rounded-sm border border-drkblue-300 bg-drkblue-50 px-3 py-2 text-sm text-drkblue-900"}>
+      <MapPin className={compact ? "mt-0.5 h-3.5 w-3.5 shrink-0" : "mt-0.5 h-4 w-4 shrink-0"} aria-hidden />
+      <div className="whitespace-pre-line">{lines.join("\n")}</div>
+    </div>
+  );
+}
+
+export function LocationCard({ href, name, kind, detail, stats, description }: { href: string; name: string; kind: string; detail: string; stats: LocationStats; description?: string | null }) {
   return (
     <Link href={href} className="card group flex min-h-24 items-start gap-3 p-4 hover:border-drkblue-300 hover:bg-drkblue-50/40">
       <span className="mt-0.5 text-drkblue-900"><KindIcon kind={kind} /></span>
       <span className="min-w-0 flex-1">
         <span className="block font-bold text-gray-800 group-hover:text-drkblue-700">{name}</span>
         <span className="block text-xs text-gray-500">{COMPARTMENT_KIND[kind] ?? kind} · {detail}</span>
+        {description && <span className="mt-1 line-clamp-2 block text-xs text-drkblue-900">{description}</span>}
         <span className="mt-2 block"><StatsBadges s={stats} /></span>
       </span>
       <ChevronRight className="mt-1 h-5 w-5 text-gray-400" aria-hidden />

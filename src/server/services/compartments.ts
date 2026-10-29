@@ -1,5 +1,5 @@
 import type { CompartmentKind } from "@prisma/client";
-import { z, optInt, optId, reqText } from "@/lib/validation";
+import { z, optInt, optId, optText, reqText } from "@/lib/validation";
 import { db, type Tx } from "../db";
 import type { Actor } from "../actor";
 import { can, requirePermission } from "../actor";
@@ -67,6 +67,7 @@ async function refreshLabels(tx: Tx, compartmentId: string) {
 
 const createSchema = z.object({
   name: reqText(80),
+  description: optText(1000),
   kind: z.enum([...CONTAINER_KINDS, "COMPARTMENT"]).optional(),
   parentId: optId(),
   sortOrder: optInt(0, 10000),
@@ -90,6 +91,7 @@ export async function createCompartment(actor: Actor, vehicleId: string, input: 
         vehicleId,
         parentId: parent?.id ?? null,
         name: d.name,
+        description: d.description,
         kind: (parent ? "COMPARTMENT" : (d.kind ?? "CABINET")) as CompartmentKind,
         sortOrder: d.sortOrder ?? (max._max.sortOrder ?? 0) + 10,
       },
@@ -101,6 +103,7 @@ export async function createCompartment(actor: Actor, vehicleId: string, input: 
 
 const updateSchema = z.object({
   name: reqText(80),
+  description: optText(1000),
   kind: z.enum([...CONTAINER_KINDS, "COMPARTMENT"]).optional(),
   sortOrder: optInt(0, 10000),
   parentId: optId(), // nur für Fächer: in anderen Schrank verschieben
@@ -123,6 +126,8 @@ export async function updateCompartment(actor: Actor, id: string, input: unknown
       where: { id },
       data: {
         name: d.name,
+        // Beschreibung nur ändern, wenn sie mitgeschickt wurde (leer = entfernen)
+        description: typeof input === "object" && input !== null && "description" in input ? (d.description ?? null) : before.description,
         parentId,
         kind: before.parentId ? "COMPARTMENT" : ((d.kind ?? before.kind) as CompartmentKind),
         sortOrder: d.sortOrder ?? before.sortOrder,
@@ -131,7 +136,7 @@ export async function updateCompartment(actor: Actor, id: string, input: unknown
     await refreshLabels(tx, id);
     await audit(
       actor,
-      { action: "compartment.update", entityType: "VehicleCompartment", entityId: id, vehicleId: before.vehicleId, oldValues: { name: before.name, kind: before.kind, parentId: before.parentId, sortOrder: before.sortOrder }, newValues: { name: c.name, kind: c.kind, parentId: c.parentId, sortOrder: c.sortOrder } },
+      { action: "compartment.update", entityType: "VehicleCompartment", entityId: id, vehicleId: before.vehicleId, oldValues: { name: before.name, description: before.description, kind: before.kind, parentId: before.parentId, sortOrder: before.sortOrder }, newValues: { name: c.name, description: c.description, kind: c.kind, parentId: c.parentId, sortOrder: c.sortOrder } },
       tx,
     );
     return c;
@@ -230,12 +235,12 @@ export async function copyLoadout(actor: Actor, fromVehicleId: string, toVehicle
       const map = new Map<string, string>();
       for (const c of tree) {
         const existed = await tx.vehicleCompartment.findFirst({ where: { vehicleId: toVehicleId, parentId: null, name: { equals: c.name, mode: "insensitive" } } });
-        const nc = existed ?? (await tx.vehicleCompartment.create({ data: { vehicleId: toVehicleId, name: c.name, kind: c.kind, sortOrder: c.sortOrder } }));
+        const nc = existed ?? (await tx.vehicleCompartment.create({ data: { vehicleId: toVehicleId, name: c.name, description: c.description, kind: c.kind, sortOrder: c.sortOrder } }));
         if (!existed) compartments++;
         map.set(c.id, nc.id);
         for (const f of c.children) {
           const fe = await tx.vehicleCompartment.findFirst({ where: { vehicleId: toVehicleId, parentId: nc.id, name: { equals: f.name, mode: "insensitive" } } });
-          const nf = fe ?? (await tx.vehicleCompartment.create({ data: { vehicleId: toVehicleId, parentId: nc.id, name: f.name, kind: "COMPARTMENT", sortOrder: f.sortOrder } }));
+          const nf = fe ?? (await tx.vehicleCompartment.create({ data: { vehicleId: toVehicleId, parentId: nc.id, name: f.name, description: f.description, kind: "COMPARTMENT", sortOrder: f.sortOrder } }));
           if (!fe) compartments++;
           map.set(f.id, nf.id);
         }

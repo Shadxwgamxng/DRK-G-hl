@@ -10,7 +10,7 @@ import { notFoundOnError } from "@/server/page-helpers";
 import { Card, EmptyState } from "@/components/ui";
 import { ActionForm, InlineAction, SelectInput, SubmitButton, TextArea, TextInput } from "@/components/forms";
 import { SearchSelect } from "@/components/search-select";
-import { Breadcrumb, KindIcon, LocationCard, StatsBadges, StockTable, statsOf } from "@/components/loadout";
+import { Breadcrumb, KindIcon, LocationCard, LocationHint, StatsBadges, StockTable, statsOf } from "@/components/loadout";
 import { createStockAction, markCheckedAction } from "@/app/actions/materials";
 import { copyLoadoutAction, createCompartmentAction, deleteCompartmentAction, updateCompartmentAction } from "@/app/actions/compartments";
 import { COMPARTMENT_KIND } from "@/lib/labels";
@@ -145,6 +145,7 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
             <p className="text-sm text-gray-600">{COMPARTMENT_KIND[loc.kind]}{loc.parent ? ` in ${loc.parent.name}` : ""}</p>
           </div>
         </div>
+        <LocationHint texts={[loc.parent?.description && `${loc.parent.name}: ${loc.parent.description}`, loc.description]} />
 
         {!isFach && (
           <section className="space-y-3">
@@ -155,7 +156,7 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {loc.children.map((f) => {
                   const st = statsOf(stocks.filter((s) => s.compartmentId === f.id));
-                  return <LocationCard key={f.id} href={`${base}?ort=${f.id}`} name={f.name} kind={f.kind} detail={`${st.positions} Position(en)`} stats={st} />;
+                  return <LocationCard key={f.id} href={`${base}?ort=${f.id}`} name={f.name} kind={f.kind} detail={`${st.positions} Position(en)`} stats={st} description={f.description} />;
                 })}
               </div>
             )}
@@ -174,6 +175,7 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
               <Card title="Fach anlegen">
                 <ActionForm action={createCompartmentAction.bind(null, id, loc.id)} resetOnSuccess>
                   <TextInput label="Name des Fachs" name="name" required placeholder="z. B. Fach 1, Fach Zugang, Seitentasche" />
+                  <TextArea label="Beschreibung (optional)" name="description" rows={2} placeholder="z. B. linke Innentasche, hinter dem Beatmungsbeutel" />
                   <SubmitButton>Fach anlegen</SubmitButton>
                 </ActionForm>
               </Card>
@@ -189,6 +191,7 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
                   )}
                   <TextInput label="Reihenfolge" name="sortOrder" type="number" inputMode="numeric" min={0} defaultValue={loc.sortOrder} hint="Kleinere Zahl = weiter vorne (auch beim Check)" />
                 </div>
+                <TextArea label="Beschreibung / Hinweis zum Ort" name="description" rows={3} defaultValue={loc.description ?? ""} hint="Wird in der Beladung und beim Check angezeigt – z. B. wo genau sich das Fach befindet." />
                 <SubmitButton variant="secondary">Speichern</SubmitButton>
               </ActionForm>
               <div className="mt-4 border-t border-gray-200 pt-4">
@@ -221,7 +224,7 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
           {tree.map((c) => {
             const ids = new Set([c.id, ...c.children.map((f) => f.id)]);
             const st = statsOf(stocks.filter((s) => s.compartmentId && ids.has(s.compartmentId)));
-            return <LocationCard key={c.id} href={`${base}?ort=${c.id}`} name={c.name} kind={c.kind} detail={`${c.children.length} Fächer · ${st.positions} Position(en)`} stats={st} />;
+            return <LocationCard key={c.id} href={`${base}?ort=${c.id}`} name={c.name} kind={c.kind} detail={`${c.children.length} Fächer · ${st.positions} Position(en)`} stats={st} description={c.description} />;
           })}
           {unassigned.length > 0 && (
             <Link href={`${base}?ort=ohne`} className="card flex min-h-24 flex-col justify-center gap-2 border-dashed p-4 hover:bg-gray-50">
@@ -249,6 +252,7 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
                 <TextInput label="Name" name="name" required placeholder="z. B. Ausziehschrank links, Notfallrucksack" />
                 <SelectInput label="Art" name="kind" required defaultValue="CABINET" options={CONTAINER_KINDS.map((k) => ({ value: k, label: COMPARTMENT_KIND[k] }))} />
               </div>
+              <TextArea label="Beschreibung (optional)" name="description" rows={2} placeholder="z. B. Patientenraum links, unter der Arbeitsfläche" />
               <SubmitButton>Anlegen</SubmitButton>
             </ActionForm>
           </Card>
