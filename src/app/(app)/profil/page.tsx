@@ -6,6 +6,7 @@ import { ActionForm, Checkbox, SubmitButton, TextInput } from "@/components/form
 import { changePasswordAction, updatePreferencesAction } from "@/app/actions/admin";
 import { fmtDateTime } from "@/lib/format";
 import { USER_STATUS } from "@/lib/labels";
+import { AmbulanceToggle } from "@/components/route-ambulance";
 
 export const metadata = { title: "Mein Profil" };
 
@@ -52,6 +53,9 @@ export default async function ProfilePage() {
               <Checkbox name="emailNotifications" label="Benachrichtigungen zusätzlich per E-Mail erhalten" hint="Nur wirksam, wenn der E-Mail-Versand vom Administrator aktiviert wurde." defaultChecked={user.emailNotifications} />
               <SubmitButton variant="secondary">Speichern</SubmitButton>
             </ActionForm>
+          </Card>
+          <Card title="Darstellung">
+            <AmbulanceToggle />
           </Card>
         </div>
       </div>

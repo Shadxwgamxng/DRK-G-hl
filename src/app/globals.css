@@ -80,3 +80,48 @@ body {
 .bottom-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* ───── RTW-Animation beim Seitenwechsel (components/route-ambulance.tsx) ───── */
+.rtw-drive {
+  position: fixed;
+  left: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 84px); /* über der Handy-Navigation */
+  z-index: 60;
+  pointer-events: none;
+  animation: rtw-drive 1.5s cubic-bezier(0.45, 0.05, 0.4, 1) forwards;
+}
+@media (min-width: 1024px) {
+  .rtw-drive { bottom: 18px; }
+}
+@keyframes rtw-drive {
+  from { transform: translateX(-230px); }
+  to { transform: translateX(calc(100vw + 40px)); }
+}
+.rtw-bounce { position: relative; animation: rtw-bounce 0.28s ease-in-out infinite alternate; }
+@keyframes rtw-bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2px); }
+}
+.rtw-wheel { animation: rtw-spin 0.35s linear infinite; }
+@keyframes rtw-spin { to { transform: rotate(360deg); } }
+.rtw-blue { fill: #2275d0; }
+.rtw-blue-a { animation: rtw-flash 0.3s steps(1) infinite; }
+.rtw-blue-b { animation: rtw-flash 0.3s steps(1) infinite 0.15s; }
+@keyframes rtw-flash {
+  0% { fill: #2275d0; filter: drop-shadow(0 0 6px #4fa3ff); }
+  50% { fill: #0b3a73; filter: none; }
+}
+.rtw-beam { animation: rtw-flash-beam 0.6s ease-in-out infinite alternate; }
+@keyframes rtw-flash-beam { from { opacity: 0.5; } to { opacity: 1; } }
+.rtw-speed {
+  position: absolute;
+  left: -70px;
+  top: 30px;
+  width: 70px;
+  height: 30px;
+  background: repeating-linear-gradient(to bottom, transparent 0 7px, rgba(85, 79, 74, 0.35) 7px 9px);
+  mask-image: linear-gradient(to right, transparent, #000);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rtw-drive { display: none; }
+}
