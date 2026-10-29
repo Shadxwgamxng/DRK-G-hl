@@ -230,3 +230,35 @@ describe("Ersteinrichtung der Beladung", () => {
     expect(r.requestedQuantity).toBe(3);
   });
 });
+
+describe("„Vollständig“ bei der Kontrolle (Soll-Menge vorhanden)", () => {
+  it("bucht bei neu eingerichteten Positionen die Soll-Menge und entfernt falsche Nachfüllanforderungen", async () => {
+    const { admin, user, v, checklist, results, sPlain, sDated, sDevice } = await setup();
+    const handschuhe = await makeMaterial({ name: "Handschuhe" });
+    const kanuelen = await makeMaterial({ name: "Kanüle", batchTracked: true });
+    // Ersteinrichtung: Soll angelegt, noch nichts gebucht
+    const sH = await createVehicleStock(admin, v.id, { materialId: handschuhe.id, targetQuantity: 4, minQuantity: 0, compartment: "Fach 1" });
+    const sK = await createVehicleStock(admin, v.id, { materialId: kanuelen.id, targetQuantity: 6, minQuantity: 0, compartment: "Fach 1" });
+    const base = [sPlain, sDated, sDevice].map((s) => ({ stockId: s.id, status: "OK" }));
+    const run = (materials: unknown[]) =>
+      performCheck(user, v.id, { checklistId: checklist.id, checkType: "ROUTINE", results, materialsLoadedAt: new Date().toISOString(), materials: [...base, ...materials] });
+
+    // Altzustand nachstellen: falsch erzeugte Nachfüllanforderung (Soll 4, gebucht 0)
+    await db.refillRequest.create({ data: { vehicleId: v.id, vehicleStockId: sH.id, materialId: handschuhe.id, requestedQuantity: 4, reason: "Fahrzeugkontrolle", reportedById: user.id } });
+
+    // Material mit Verfallsdatum: „Vollständig“ ohne Verfallsdatum wird abgelehnt
+    await expect(run([{ stockId: sH.id, status: "OK" }, { stockId: sK.id, status: "OK" }])).rejects.toMatchObject({ code: "VALIDATION", fieldErrors: { [`mat_${sK.id}`]: expect.stringContaining("Verfallsdatum") } });
+
+    await run([
+      { stockId: sH.id, status: "OK" },
+      { stockId: sK.id, status: "DEVIATION", batches: [], newBatches: [{ expiryDate: toDateInput(addDays(berlinToday(), 400)), batchNumber: "", quantity: "6" }] },
+    ]);
+    expect((await db.vehicleMaterialStock.findUniqueOrThrow({ where: { id: sH.id } })).currentQuantity).toBe(4);
+    expect((await db.vehicleMaterialStock.findUniqueOrThrow({ where: { id: sK.id } })).currentQuantity).toBe(6);
+    // keine offene Nachfüllung mehr – die falsche wurde automatisch storniert
+    expect(await db.refillRequest.count({ where: { vehicleStockId: { in: [sH.id, sK.id] }, status: "OPEN" } })).toBe(0);
+    expect((await db.refillRequest.findFirstOrThrow({ where: { vehicleStockId: sH.id } })).status).toBe("CANCELLED");
+    const res = await db.vehicleCheckMaterialResult.findFirstOrThrow({ where: { vehicleStockId: sH.id } });
+    expect(res).toMatchObject({ status: "OK", previousQuantity: 0, countedQuantity: 4 });
+  });
+});

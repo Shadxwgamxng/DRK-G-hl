@@ -30,6 +30,9 @@ export type MaterialState = {
 
 const NO_COMPARTMENT = "Ohne Lagerort";
 
+/** Soll ist höher als gebucht und die Stücke brauchen ein Verfallsdatum (z. B. bei der Ersteinrichtung). */
+const needsExpiry = (s: CheckStock) => s.batchTracked && s.current < s.target;
+
 /** Wandelt den Formularzustand in die Nutzdaten für den Server um. */
 export function materialPayload(stocks: CheckStock[], state: Record<string, MaterialState>) {
   return stocks.map((s) => {
@@ -111,26 +114,28 @@ export function CheckMaterials({
         <span className="text-sm font-semibold">{done} / {stocks.length} geprüft</span>
       </div>
       <p className="text-sm text-gray-600">
-        „Stimmt“ heißt: Die angezeigte Menge ist vollständig vorhanden. Bei Abweichungen die tatsächlich vorhandene Menge eintragen –
+        „Vollständig“ heißt: Die Soll-Menge ist vorhanden. Fehlt etwas oder ist mehr da, unter „Abweichung“ die tatsächliche Menge eintragen –
         Fehlmengen kommen automatisch auf die Nachfüllliste.
       </p>
       {hiddenNarcotics > 0 && <Alert tone="info">{hiddenNarcotics} BtM-Position(en) werden nur Personen mit BtM-Berechtigung angezeigt und von diesen geprüft.</Alert>}
 
       {[...groups.entries()].map(([compartment, list]) => {
         const open = list.filter((s) => !state[s.id]?.status);
+        // Material mit Verfallsdatum, das noch nicht (vollständig) gebucht ist, braucht ein Verfallsdatum – nicht pauschal abhaken
+        const quick = open.filter((s) => !needsExpiry(s));
         return (
           <div key={compartment} className="card overflow-hidden">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-drkblue-50 px-4 py-2">
               <h4 className="font-bold text-drkblue-900">{compartment}</h4>
               <div className="flex items-center gap-3 text-sm">
                 <span>{list.length - open.length} / {list.length}</span>
-                {open.length > 0 && (
+                {quick.length > 0 && (
                   <button
                     type="button"
                     className="min-h-10 rounded-sm px-2 font-semibold text-green-800 hover:bg-green-50"
-                    onClick={() => onChange({ ...state, ...Object.fromEntries(open.map((s) => [s.id, { ...state[s.id], status: "OK" as const }])) })}
+                    onClick={() => onChange({ ...state, ...Object.fromEntries(quick.map((s) => [s.id, { ...state[s.id], status: "OK" as const }])) })}
                   >
-                    Übrige im Fach „Stimmt“
+                    Übrige im Fach „Vollständig“
                   </button>
                 )}
               </div>
@@ -141,13 +146,19 @@ export function CheckMaterials({
                 const err = errors?.[`mat_${s.id}`];
                 const noteErr = errors?.[`matnote_${s.id}`];
                 const expired = s.batches.filter((b) => b.expiryDate && b.expiryDate.slice(0, 10) < today);
-                const startDeviation = () =>
+                const startDeviation = (prefillMissing = false) =>
                   set(s.id, {
                     status: "DEVIATION",
-                    counted: m.counted ?? String(s.current),
+                    counted: m.counted ?? String(prefillMissing ? s.target : s.current),
                     batches: m.batches ?? Object.fromEntries(s.batches.map((b) => [b.id, { counted: String(b.quantity) }])),
-                    newBatches: m.newBatches ?? (s.batchTracked && s.batches.length === 0 ? [{ expiryDate: "", batchNumber: "", quantity: "" }] : []),
+                    newBatches:
+                      m.newBatches ??
+                      (s.batchTracked && (s.batches.length === 0 || prefillMissing)
+                        ? [{ expiryDate: "", batchNumber: "", quantity: prefillMissing ? String(s.target - s.current) : "" }]
+                        : []),
                   });
+                // „Vollständig“: bei fehlender Buchung mit Verfallsdatum direkt die Zeile für die übrigen Stücke öffnen
+                const markComplete = () => (needsExpiry(s) ? startDeviation(true) : set(s.id, { status: "OK" }));
                 return (
                   <li key={s.id} id={`mat-${s.id}`} className={clsx("p-4", m.status === "DEFECT" && "bg-drk-50/40", (err || noteErr) && "ring-2 ring-inset ring-amber-400")}>
                     <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
@@ -178,10 +189,10 @@ export function CheckMaterials({
                     )}
 
                     <div className={clsx("mt-3 grid gap-2", s.isEquipment ? "grid-cols-3" : "grid-cols-2")} role="radiogroup" aria-label={s.name}>
-                      <ChoiceButton active={m.status === "OK"} onClick={() => set(s.id, { status: "OK" })} cls="bg-green-700 text-white border-green-700" icon={<Check className="h-5 w-5" aria-hidden />}>
-                        {s.isEquipment ? "Vorhanden & funktioniert" : "Stimmt"}
+                      <ChoiceButton active={m.status === "OK"} onClick={markComplete} cls="bg-green-700 text-white border-green-700" icon={<Check className="h-5 w-5" aria-hidden />}>
+                        {s.isEquipment ? "Vorhanden & funktioniert" : "Vollständig"}
                       </ChoiceButton>
-                      <ChoiceButton active={m.status === "DEVIATION"} onClick={startDeviation} cls="bg-amber-600 text-white border-amber-600" icon={<Pencil className="h-5 w-5" aria-hidden />}>
+                      <ChoiceButton active={m.status === "DEVIATION"} onClick={() => startDeviation()} cls="bg-amber-600 text-white border-amber-600" icon={<Pencil className="h-5 w-5" aria-hidden />}>
                         Abweichung
                       </ChoiceButton>
                       {s.isEquipment && (
@@ -201,8 +212,16 @@ export function CheckMaterials({
                       </div>
                     )}
 
+                    {m.status === "OK" && s.current < s.target && !s.batchTracked && (
+                      <p className="mt-2 text-sm text-green-800">Wird mit der Soll-Menge ({s.target} {s.unit}) gebucht.</p>
+                    )}
                     {m.status === "DEVIATION" && s.batchTracked && (
                       <div className="mt-3 space-y-2">
+                        {needsExpiry(s) && (
+                          <p className="text-sm font-semibold text-drkblue-900">
+                            Erst {s.current} von {s.target} {s.unit} erfasst – bitte das Verfallsdatum der übrigen Stücke eintragen (bei unterschiedlichen Daten weitere Zeile hinzufügen).
+                          </p>
+                        )}
                         {s.batches.map((b) => {
                           const row = m.batches?.[b.id] ?? { counted: String(b.quantity) };
                           const isExpired = Boolean(b.expiryDate && b.expiryDate.slice(0, 10) < today);

@@ -80,6 +80,9 @@ export async function validateMaterialResults(actor: Actor, vehicleId: string, r
     if (r.status === "DEFECT" && !s.material.isEquipment) fe[`mat_${r.stockId}`] = "„Defekt“ nur bei Geräten";
     if (r.status === "DEFECT" && !r.note) fe[`matnote_${r.stockId}`] = "Bitte den Defekt beschreiben";
     if (s.material.isNarcotic) for (const nb of r.newBatches ?? []) if (!nb.batchNumber) fe[`mat_${r.stockId}`] = "Chargennummer ist bei BtM Pflicht";
+    // „Vollständig“ bei Material mit Verfallsdatum, aber zu wenig gebucht: Verfallsdatum der übrigen Stücke ist unbekannt
+    if (r.status === "OK" && s.material.batchTracked && s.currentQuantity < s.targetQuantity)
+      fe[`mat_${r.stockId}`] = `Gebucht sind erst ${s.currentQuantity} von ${s.targetQuantity}. Bitte unter „Abweichung“ das Verfallsdatum der übrigen Stücke eintragen.`;
   }
   // Positionen, die erst nach dem Öffnen der Kontrolle angelegt wurden, müssen nicht bewertet sein
   const missing = stocks.filter((s) => !answered.has(s.id) && (!loadedAt || s.createdAt <= loadedAt));
@@ -112,6 +115,15 @@ export async function applyMaterialResults(
     if (stock.material.isNarcotic && !can(actor, "materials.btm")) throw conflict("Keine Berechtigung für Betäubungsmittel.");
     const previous = stock.currentQuantity;
     let expiredRemoved = 0;
+
+    if (r.status === "OK" && previous < stock.targetQuantity) {
+      // „Vollständig“ = Soll-Menge ist vorhanden → fehlende Buchung (z. B. Ersteinrichtung) nachholen
+      if (stock.material.batchTracked)
+        throw invalid(`${stock.material.name}: Gebucht sind erst ${previous} von ${stock.targetQuantity}. Bitte unter „Abweichung“ das Verfallsdatum der übrigen Stücke eintragen.`, { [`mat_${stock.id}`]: "Verfallsdatum fehlt" });
+      const delta = stock.targetQuantity - previous;
+      await changeVehicleQuantity(tx, stock.id, delta);
+      await createMovement(tx, actor, { type: "CORRECTION", materialId: stock.materialId, quantity: delta, toVehicleStockId: stock.id, note: `${stamp}: vollständig (Soll ${stock.targetQuantity}) bestätigt` });
+    }
 
     if (r.status === "DEVIATION") {
       if (stock.material.batchTracked) {
@@ -182,7 +194,7 @@ export async function applyMaterialResults(
     }
 
     const after = await tx.vehicleMaterialStock.update({ where: { id: stock.id }, data: { lastCheckedAt: ctx.performedAt } });
-    let status: CheckMaterialStatus = r.status === "DEFECT" ? "DEFECT" : after.currentQuantity !== previous || expiredRemoved ? "DEVIATION" : "OK";
+    let status: CheckMaterialStatus = r.status === "DEFECT" ? "DEFECT" : r.status === "OK" ? "OK" : after.currentQuantity !== previous || expiredRemoved ? "DEVIATION" : "OK";
     if (status === "DEVIATION" && stock.material.isEquipment && after.currentQuantity === 0) status = "MISSING";
     if (status !== "OK") deviations++;
     expiredRemovedTotal += expiredRemoved;
