@@ -177,7 +177,7 @@ export async function getCheck(actor: Actor, id: string) {
       vehicle: true,
       performedBy: { select: { firstName: true, lastName: true } },
       results: { orderBy: { sortOrder: "asc" } },
-      materialResults: { where: can(actor, "materials.btm") ? {} : { isNarcotic: false }, orderBy: [{ compartment: "asc" }, { sortOrder: "asc" }] },
+      materialResults: { where: can(actor, "materials.btm") ? {} : { isNarcotic: false }, orderBy: { sortOrder: "asc" } }, // Reihenfolge wie im Fahrzeug
       attachments: { orderBy: { createdAt: "asc" } },
       defects: { select: { id: true, title: true, status: true, severity: true, checkItemLabel: true } },
     },
