@@ -19,25 +19,51 @@ const isDisabled = () => {
 export function RouteAmbulance() {
   const pathname = usePathname();
   const first = useRef(true);
+  const startedAt = useRef(0);
   const [run, setRun] = useState(0);
 
+  const start = () => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || isDisabled()) return;
+    if (Date.now() - startedAt.current < 1200) return; // läuft bereits
+    startedAt.current = Date.now();
+    setRun((n) => n + 1);
+  };
+
+  // Schon beim Klick auf einen internen Link losfahren – die neue Seite erscheint, während der RTW das Bild verdeckt
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as HTMLElement | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin || url.pathname.startsWith("/api/") || url.pathname === location.pathname) return;
+      start();
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
+
+  // Seitenwechsel ohne Link (z. B. nach dem Speichern eines Formulars)
   useEffect(() => {
     if (first.current) {
       first.current = false; // nicht beim ersten Laden
       return;
     }
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || isDisabled()) return;
-    setRun((n) => n + 1);
-    const t = setTimeout(() => setRun(0), 1700);
-    return () => clearTimeout(t);
+    start();
   }, [pathname]);
+
+  useEffect(() => {
+    if (!run) return;
+    const t = setTimeout(() => setRun(0), 1500);
+    return () => clearTimeout(t);
+  }, [run]);
 
   if (!run) return null;
   return (
     <div key={run} className="rtw-drive" aria-hidden>
       <div className="rtw-bounce">
         <span className="rtw-speed" />
-        <svg viewBox="0 0 230 104" width="190" height="86" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 230 104" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
           {/* Schatten */}
           <ellipse cx="112" cy="97" rx="100" ry="5" fill="rgba(0,0,0,.18)" />
           {/* Kofferaufbau */}

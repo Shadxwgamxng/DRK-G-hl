@@ -81,28 +81,31 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* ───── RTW-Animation beim Seitenwechsel (components/route-ambulance.tsx) ───── */
+/* ───── RTW-Animation beim Seitenwechsel (components/route-ambulance.tsx) ─────
+   Der RTW ist so groß, dass sein Aufbau beim Durchfahren den ganzen Bildschirm verdeckt. */
 .rtw-drive {
   position: fixed;
+  top: 50%;
   left: 0;
-  bottom: calc(env(safe-area-inset-bottom) + 84px); /* über der Handy-Navigation */
   z-index: 60;
   pointer-events: none;
-  animation: rtw-drive 1.5s cubic-bezier(0.45, 0.05, 0.4, 1) forwards;
+  animation: rtw-drive 1.35s cubic-bezier(0.55, 0.05, 0.45, 0.95) forwards;
 }
-@media (min-width: 1024px) {
-  .rtw-drive { bottom: 18px; }
+.rtw-drive svg {
+  display: block;
+  height: 175vh; /* Aufbau ≈ 63 % der Grafikhöhe → deckt die volle Bildschirmhöhe */
+  width: auto;
 }
 @keyframes rtw-drive {
-  from { transform: translateX(-230px); }
-  to { transform: translateX(calc(100vw + 40px)); }
+  from { transform: translate(-100%, -45%); }
+  to { transform: translate(100vw, -45%); }
 }
-.rtw-bounce { position: relative; animation: rtw-bounce 0.28s ease-in-out infinite alternate; }
+.rtw-bounce { position: relative; animation: rtw-bounce 0.22s ease-in-out infinite alternate; }
 @keyframes rtw-bounce {
   from { transform: translateY(0); }
-  to { transform: translateY(-2px); }
+  to { transform: translateY(-0.6vh); }
 }
-.rtw-wheel { animation: rtw-spin 0.35s linear infinite; }
+.rtw-wheel { animation: rtw-spin 0.3s linear infinite; }
 @keyframes rtw-spin { to { transform: rotate(360deg); } }
 .rtw-blue { fill: #2275d0; }
 .rtw-blue-a { animation: rtw-flash 0.3s steps(1) infinite; }
@@ -115,11 +118,11 @@ body {
 @keyframes rtw-flash-beam { from { opacity: 0.5; } to { opacity: 1; } }
 .rtw-speed {
   position: absolute;
-  left: -70px;
-  top: 30px;
-  width: 70px;
-  height: 30px;
-  background: repeating-linear-gradient(to bottom, transparent 0 7px, rgba(85, 79, 74, 0.35) 7px 9px);
+  right: 100%;
+  top: 22%;
+  width: 60vh;
+  height: 45%;
+  background: repeating-linear-gradient(to bottom, transparent 0 4.5vh, rgba(85, 79, 74, 0.3) 4.5vh 5.5vh);
   mask-image: linear-gradient(to right, transparent, #000);
 }
 @media (prefers-reduced-motion: reduce) {
