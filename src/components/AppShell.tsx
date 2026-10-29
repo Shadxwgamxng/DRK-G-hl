@@ -11,7 +11,6 @@ import { BottomNav, LogoutButton, Sidebar, type NavItem } from "./nav";
 import { SyncIndicator } from "./pwa";
 import { DrkLogo } from "./brand";
 import { SyncRunner } from "./sync";
-import { RouteAmbulance } from "./route-ambulance";
 
 export async function AppShell({ actor, children }: { actor: Actor; children: React.ReactNode }) {
   const [unread, openDefects, openRefills, pendingUsers, settings] = await Promise.all([
@@ -90,7 +89,6 @@ export async function AppShell({ actor, children }: { actor: Actor; children: Re
         </main>
       </div>
       <SyncRunner userId={actor.id} />
-      <RouteAmbulance />
       <BottomNav items={items} primary={["/", "/fahrzeuge", "/maengel", "/nachfuellung"]} footer={<LogoutButton userId={actor.id} />} />
     </div>
   );
