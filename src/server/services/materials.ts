@@ -13,7 +13,7 @@ import { getSettings } from "../settings";
 import { parse } from "../validate";
 import { materialVisibility } from "../material-visibility";
 import type { Tx } from "../db";
-import { compartmentLabel, ensureCompartmentPath, splitCompartmentText } from "./compartments";
+import { compartmentPathLabel, ensureCompartmentPath, splitCompartmentText } from "./compartments";
 import { linkAttachments } from "./attachments";
 import { changeBatch, changeVehicleQuantity, createMovement, findOrCreateBatch, lockVehicleStock, syncRefillRequest } from "./stock-core";
 
@@ -230,9 +230,9 @@ const stockSchema = z.object({
 /** Ermittelt den Lagerort (ID + Anzeige „Schrank › Fach“) und prüft, dass er zum Fahrzeug gehört. */
 async function resolveCompartment(tx: Tx, vehicleId: string, d: { compartmentId?: string; compartment?: string }) {
   if (d.compartmentId) {
-    const c = await tx.vehicleCompartment.findFirst({ where: { id: d.compartmentId, vehicleId }, include: { parent: true } });
+    const c = await tx.vehicleCompartment.findFirst({ where: { id: d.compartmentId, vehicleId } });
     if (!c) throw invalid("Lagerort ungültig", { compartmentId: "Gehört nicht zu diesem Fahrzeug" });
-    return { compartmentId: c.id, compartment: compartmentLabel(c) };
+    return { compartmentId: c.id, compartment: await compartmentPathLabel(tx, c.id) };
   }
   if (d.compartment) {
     const [container, fach] = splitCompartmentText(d.compartment);

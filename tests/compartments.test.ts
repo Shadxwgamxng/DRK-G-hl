@@ -39,12 +39,40 @@ describe("Schränke und Fächer im Fahrzeug", () => {
     expect((await db.vehicleMaterialStock.findUniqueOrThrow({ where: { id: a.id } })).compartmentId).toBe(fach2.id);
   });
 
-  it("erlaubt nur zwei Ebenen, keine fremden Lagerorte und löscht nur leere Lagerorte", async () => {
+  it("verschachtelte Fächer: Schrank › Auszug › Fach, höchstens 5 Ebenen, kein Fach in sich selbst", async () => {
+    const { admin, v, schrank } = await setup();
+    const auszug = await createCompartment(admin, v.id, { name: "Auszugschrank", parentId: schrank.id, kind: "DRAWER" });
+    const f1 = await createCompartment(admin, v.id, { name: "Fach 1", parentId: auszug.id });
+    const m = await makeMaterial({ name: "Kompresse" });
+    const st = await createVehicleStock(admin, v.id, { materialId: m.id, targetQuantity: 1, minQuantity: 0, compartmentId: f1.id });
+    expect((await db.vehicleMaterialStock.findUniqueOrThrow({ where: { id: st.id } })).compartment).toBe("Ausziehschrank › Auszugschrank › Fach 1");
+
+    // Umbenennen des Schranks aktualisiert den Pfad bis in die unterste Ebene
+    await updateCompartment(admin, schrank.id, { name: "Seitenschrank", kind: "CABINET" });
+    expect((await db.vehicleMaterialStock.findUniqueOrThrow({ where: { id: st.id } })).compartment).toBe("Seitenschrank › Auszugschrank › Fach 1");
+
+    // Ebene 4 und 5 erlaubt, Ebene 6 nicht
+    const e4 = await createCompartment(admin, v.id, { name: "Box", parentId: f1.id });
+    const e5 = await createCompartment(admin, v.id, { name: "Tasche", parentId: e4.id });
+    await expect(createCompartment(admin, v.id, { name: "Zu tief", parentId: e5.id })).rejects.toMatchObject({ code: "VALIDATION" });
+    await expect(db.vehicleCompartment.create({ data: { vehicleId: v.id, parentId: e5.id, name: "Zu tief (DB)" } })).rejects.toThrow();
+
+    // nicht in sich selbst / eigenes Unterfach verschieben
+    await expect(updateCompartment(admin, auszug.id, { name: "Auszugschrank", parentId: f1.id })).rejects.toMatchObject({ code: "VALIDATION" });
+    await expect(db.vehicleCompartment.update({ where: { id: auszug.id }, data: { parentId: e5.id } })).rejects.toThrow();
+
+    // Unterfach auf die oberste Ebene holen
+    await updateCompartment(admin, e5.id, { name: "Tasche", parentId: "ROOT" });
+    expect((await db.vehicleCompartment.findUniqueOrThrow({ where: { id: e5.id } })).parentId).toBeNull();
+
+    // Check folgt der Verschachtelung
+    const { stocks } = await materialsForCheck(admin, v.id);
+    expect(stocks.find((x) => x.id === st.id)?.compartment).toBe("Seitenschrank › Auszugschrank › Fach 1");
+  });
+
+  it("keine fremden Lagerorte, keine doppelten Namen, löscht nur leere Lagerorte", async () => {
     const { admin, v, schrank, fach1 } = await setup();
-    await expect(createCompartment(admin, v.id, { name: "Unterfach", parentId: fach1.id })).rejects.toMatchObject({ code: "VALIDATION" });
     await expect(createCompartment(admin, v.id, { name: "fach 1", parentId: schrank.id })).rejects.toMatchObject({ code: "VALIDATION" });
-    // Datenbank-Schutz auch ohne Anwendungslogik
-    await expect(db.vehicleCompartment.create({ data: { vehicleId: v.id, parentId: fach1.id, name: "Ebene 3" } })).rejects.toThrow();
 
     const other = await makeVehicle("MTW");
     const m = await makeMaterial();

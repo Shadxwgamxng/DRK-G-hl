@@ -40,8 +40,7 @@ export default async function CheckPage({ params, searchParams }: { params: Prom
             name: s.material.name,
             unit: s.material.unit,
             compartment: s.compartment,
-            locationHint:
-              [s.compartmentRef?.parent?.description && `${s.compartmentRef.parent.name}: ${s.compartmentRef.parent.description}`, s.compartmentRef?.description].filter(Boolean).join("\n") || null,
+            locationHint: s.locationHint,
             category: s.material.category.name,
             target: s.targetQuantity,
             current: s.currentQuantity,

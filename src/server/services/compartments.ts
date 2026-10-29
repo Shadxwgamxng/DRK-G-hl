@@ -1,4 +1,4 @@
-import type { CompartmentKind } from "@prisma/client";
+import type { CompartmentKind, VehicleCompartment } from "@prisma/client";
 import { z, optInt, optId, optText, reqText } from "@/lib/validation";
 import { db, type Tx } from "../db";
 import type { Actor } from "../actor";
@@ -11,46 +11,97 @@ import { materialVisibility } from "../material-visibility";
 import { parse } from "../validate";
 
 /**
- * Lagerorte im Fahrzeug – zwei Ebenen: Schrank/Behälter (Rucksack, Tasche, Auszug …) → Fach.
- * Materialpositionen liegen in einem Fach oder direkt im Schrank/Behälter.
+ * Lagerorte im Fahrzeug als Baum: Schrank/Behälter (Rucksack, Tasche, Auszug …) → Fach → Unterfach …
+ * (höchstens MAX_DEPTH Ebenen). Materialpositionen können auf jeder Ebene liegen.
  */
 
-export const CONTAINER_KINDS = ["CABINET", "DRAWER", "BACKPACK", "BAG", "BOX", "SHELF", "OTHER"] as const;
+export const CONTAINER_KINDS = ["CABINET", "DRAWER", "BACKPACK", "BAG", "BOX", "SHELF", "COMPARTMENT", "OTHER"] as const;
 export const SEPARATOR = " › ";
+export const MAX_DEPTH = 5;
+/** Auswahlwert für „oberste Ebene“ beim Verschieben */
+export const ROOT = "ROOT";
 
+type Row = VehicleCompartment;
+export type TreeNode = Row & { children: TreeNode[]; depth: number; ancestors: Row[]; parent: Row | null };
+
+const byOrder = (a: Row, b: Row) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "de");
+
+/** Baut den Baum aller Lagerorte eines Fahrzeugs (Wurzeln + schneller Zugriff je ID). */
+export function buildTree(rows: Row[]) {
+  const byId = new Map<string, TreeNode>(rows.map((r) => [r.id, { ...r, children: [], depth: 0, ancestors: [], parent: null }]));
+  const roots: TreeNode[] = [];
+  for (const n of byId.values()) {
+    const p = n.parentId ? byId.get(n.parentId) : undefined;
+    if (p) p.children.push(n);
+    else roots.push(n);
+  }
+  const walk = (list: TreeNode[], ancestors: Row[]) => {
+    list.sort(byOrder);
+    for (const n of list) {
+      n.ancestors = ancestors;
+      n.depth = ancestors.length;
+      n.parent = ancestors[ancestors.length - 1] ?? null;
+      walk(n.children, [...ancestors, n]);
+    }
+  };
+  walk(roots, []);
+  return { roots, byId };
+}
+
+/** Alle Knoten in Fahrzeugreihenfolge (Tiefensuche). */
+export function flattenTree(roots: TreeNode[]): TreeNode[] {
+  return roots.flatMap((n) => [n, ...flattenTree(n.children)]);
+}
+
+/** IDs eines Knotens und aller Unterfächer. */
+export function subtreeIds(n: TreeNode): string[] {
+  return [n.id, ...n.children.flatMap(subtreeIds)];
+}
+
+export function pathLabel(n: { name: string; ancestors?: { name: string }[] }) {
+  return [...(n.ancestors ?? []).map((a) => a.name), n.name].join(SEPARATOR);
+}
+
+/** Abwärtskompatibel: Anzeige für einen Lagerort mit optional geladenem Elternteil. */
 export function compartmentLabel(c: { name: string; parent?: { name: string } | null } | null | undefined) {
   if (!c) return null;
   return c.parent ? `${c.parent.name}${SEPARATOR}${c.name}` : c.name;
 }
 
+async function loadTree(vehicleId: string, tx: Tx = db) {
+  return buildTree(await tx.vehicleCompartment.findMany({ where: { vehicleId } }));
+}
+
+/** Vollständiger Pfad „Schrank › Fach › Unterfach“ eines Lagerorts. */
+export async function compartmentPathLabel(tx: Tx, compartmentId: string) {
+  const c = await tx.vehicleCompartment.findUniqueOrThrow({ where: { id: compartmentId } });
+  const { byId } = await loadTree(c.vehicleId, tx);
+  return pathLabel(byId.get(c.id)!);
+}
+
 export async function listCompartments(actor: Actor, vehicleId: string) {
   requirePermission(actor, "materials.view");
   await assertVehicleAccess(actor, vehicleId);
-  return db.vehicleCompartment.findMany({
-    where: { vehicleId, parentId: null },
-    include: { children: { orderBy: [{ sortOrder: "asc" }, { name: "asc" }] } },
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-  });
+  return (await loadTree(vehicleId)).roots;
 }
 
-/** Auswahlliste „Schrank“ bzw. „Schrank › Fach“ in Fahrzeugreihenfolge. */
+/** Auswahlliste aller Lagerorte mit vollem Pfad in Fahrzeugreihenfolge. */
 export async function compartmentOptions(actor: Actor, vehicleId: string) {
-  const tree = await listCompartments(actor, vehicleId);
-  return tree.flatMap((c) => [{ value: c.id, label: c.name }, ...c.children.map((f) => ({ value: f.id, label: `${c.name}${SEPARATOR}${f.name}` }))]);
+  return flattenTree(await listCompartments(actor, vehicleId)).map((n) => ({ value: n.id, label: pathLabel(n) }));
 }
 
 async function getCompartment(actor: Actor, id: string, tx: Tx = db) {
-  const c = await tx.vehicleCompartment.findUnique({ where: { id }, include: { parent: true, children: true } });
+  const c = await tx.vehicleCompartment.findUnique({ where: { id } });
   if (!c) throw notFound("Lagerort nicht gefunden.");
   await assertVehicleAccess(actor, c.vehicleId, tx);
-  return c;
+  return (await loadTree(c.vehicleId, tx)).byId.get(id)!;
 }
 
 export async function getCompartmentForView(actor: Actor, vehicleId: string, id: string) {
   requirePermission(actor, "materials.view");
   const c = await getCompartment(actor, id);
   if (c.vehicleId !== vehicleId) throw notFound("Lagerort nicht gefunden.");
-  return { ...c, children: [...c.children].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "de")) };
+  return c;
 }
 
 async function assertUniqueName(tx: Tx, vehicleId: string, parentId: string | null, name: string, exceptId?: string) {
@@ -58,11 +109,13 @@ async function assertUniqueName(tx: Tx, vehicleId: string, parentId: string | nu
   if (dup) throw invalid(parentId ? "Ein Fach mit diesem Namen gibt es hier bereits." : "Ein Schrank/Behälter mit diesem Namen gibt es bereits.", { name: "Bereits vorhanden" });
 }
 
-/** Aktualisiert die Anzeige „Schrank › Fach“ aller Positionen unterhalb eines Lagerorts. */
+/** Aktualisiert die Anzeige „Schrank › Fach › …“ aller Positionen in einem Lagerort und seinen Unterfächern. */
 async function refreshLabels(tx: Tx, compartmentId: string) {
-  const c = await tx.vehicleCompartment.findUniqueOrThrow({ where: { id: compartmentId }, include: { parent: true, children: true } });
-  await tx.vehicleMaterialStock.updateMany({ where: { compartmentId: c.id }, data: { compartment: compartmentLabel(c) } });
-  for (const f of c.children) await tx.vehicleMaterialStock.updateMany({ where: { compartmentId: f.id }, data: { compartment: `${c.name}${SEPARATOR}${f.name}` } });
+  const c = await tx.vehicleCompartment.findUniqueOrThrow({ where: { id: compartmentId } });
+  const { byId } = await loadTree(c.vehicleId, tx);
+  for (const id of subtreeIds(byId.get(compartmentId)!)) {
+    await tx.vehicleMaterialStock.updateMany({ where: { compartmentId: id }, data: { compartment: pathLabel(byId.get(id)!) } });
+  }
 }
 
 const createSchema = z.object({
@@ -78,11 +131,11 @@ export async function createCompartment(actor: Actor, vehicleId: string, input: 
   await assertVehicleAccess(actor, vehicleId, db, false);
   const d = parse(createSchema, input);
   return db.$transaction(async (tx) => {
-    let parent = null;
+    let parent: TreeNode | null = null;
     if (d.parentId) {
-      parent = await tx.vehicleCompartment.findUnique({ where: { id: d.parentId } });
-      if (!parent || parent.vehicleId !== vehicleId) throw notFound("Schrank/Behälter nicht gefunden.");
-      if (parent.parentId) throw invalid("In einem Fach können keine weiteren Fächer angelegt werden.");
+      parent = (await loadTree(vehicleId, tx)).byId.get(d.parentId) ?? null;
+      if (!parent) throw notFound("Schrank/Fach nicht gefunden.");
+      if (parent.depth + 1 >= MAX_DEPTH) throw invalid(`Höchstens ${MAX_DEPTH} Ebenen – hier können keine weiteren Fächer angelegt werden.`, { name: "Zu tief verschachtelt" });
     }
     await assertUniqueName(tx, vehicleId, parent?.id ?? null, d.name);
     const max = await tx.vehicleCompartment.aggregate({ where: { vehicleId, parentId: parent?.id ?? null }, _max: { sortOrder: true } });
@@ -92,11 +145,11 @@ export async function createCompartment(actor: Actor, vehicleId: string, input: 
         parentId: parent?.id ?? null,
         name: d.name,
         description: d.description,
-        kind: (parent ? "COMPARTMENT" : (d.kind ?? "CABINET")) as CompartmentKind,
+        kind: (d.kind ?? (parent ? "COMPARTMENT" : "CABINET")) as CompartmentKind,
         sortOrder: d.sortOrder ?? (max._max.sortOrder ?? 0) + 10,
       },
     });
-    await audit(actor, { action: "compartment.create", entityType: "VehicleCompartment", entityId: c.id, vehicleId, newValues: { name: c.name, kind: c.kind, parent: parent?.name } }, tx);
+    await audit(actor, { action: "compartment.create", entityType: "VehicleCompartment", entityId: c.id, vehicleId, newValues: { name: c.name, kind: c.kind, parent: parent ? pathLabel(parent) : null } }, tx);
     return c;
   });
 }
@@ -106,8 +159,10 @@ const updateSchema = z.object({
   description: optText(1000),
   kind: z.enum([...CONTAINER_KINDS, "COMPARTMENT"]).optional(),
   sortOrder: optInt(0, 10000),
-  parentId: optId(), // nur für Fächer: in anderen Schrank verschieben
+  parentId: optId(), // verschieben: ID eines anderen Lagerorts oder ROOT (oberste Ebene)
 });
+
+const subtreeHeight = (n: TreeNode): number => (n.children.length ? 1 + Math.max(...n.children.map(subtreeHeight)) : 0);
 
 export async function updateCompartment(actor: Actor, id: string, input: unknown) {
   requirePermission(actor, "materials.manage");
@@ -116,10 +171,16 @@ export async function updateCompartment(actor: Actor, id: string, input: unknown
   const d = parse(updateSchema, input);
   return db.$transaction(async (tx) => {
     let parentId = before.parentId;
-    if (before.parentId && d.parentId && d.parentId !== before.parentId) {
-      const p = await tx.vehicleCompartment.findUnique({ where: { id: d.parentId } });
-      if (!p || p.vehicleId !== before.vehicleId || p.parentId) throw invalid("Ziel-Schrank ungültig.", { parentId: "Ungültig" });
-      parentId = p.id;
+    if (d.parentId && (d.parentId === ROOT ? null : d.parentId) !== before.parentId) {
+      if (d.parentId === ROOT) parentId = null;
+      else {
+        const { byId } = await loadTree(before.vehicleId, tx);
+        const target = byId.get(d.parentId);
+        if (!target) throw invalid("Ziel-Lagerort ungültig.", { parentId: "Ungültig" });
+        if (subtreeIds(byId.get(id)!).includes(target.id)) throw invalid("Ein Lagerort kann nicht in sich selbst oder einem seiner Unterfächer liegen.", { parentId: "Ungültig" });
+        if (target.depth + 1 + subtreeHeight(byId.get(id)!) >= MAX_DEPTH) throw invalid(`Höchstens ${MAX_DEPTH} Ebenen – bitte einen anderen Ort wählen.`, { parentId: "Zu tief verschachtelt" });
+        parentId = target.id;
+      }
     }
     await assertUniqueName(tx, before.vehicleId, parentId, d.name, id);
     const c = await tx.vehicleCompartment.update({
@@ -129,7 +190,7 @@ export async function updateCompartment(actor: Actor, id: string, input: unknown
         // Beschreibung nur ändern, wenn sie mitgeschickt wurde (leer = entfernen)
         description: typeof input === "object" && input !== null && "description" in input ? (d.description ?? null) : before.description,
         parentId,
-        kind: before.parentId ? "COMPARTMENT" : ((d.kind ?? before.kind) as CompartmentKind),
+        kind: (d.kind ?? before.kind) as CompartmentKind,
         sortOrder: d.sortOrder ?? before.sortOrder,
       },
     });
@@ -148,12 +209,12 @@ export async function deleteCompartment(actor: Actor, id: string) {
   requirePermission(actor, "materials.manage");
   const c = await getCompartment(actor, id);
   await assertVehicleAccess(actor, c.vehicleId, db, false);
-  if (c.children.length) throw conflict("Bitte zuerst die Fächer in diesem Schrank/Behälter entfernen oder verschieben.");
+  if (c.children.length) throw conflict("Bitte zuerst die Fächer darin entfernen oder verschieben.");
   const active = await db.vehicleMaterialStock.count({ where: { compartmentId: id, active: true } });
   if (active) throw conflict(`Hier liegen noch ${active} Materialposition(en). Bitte zuerst verschieben oder entfernen.`);
   await db.$transaction(async (tx) => {
     await tx.vehicleCompartment.delete({ where: { id } });
-    await audit(actor, { action: "compartment.delete", entityType: "VehicleCompartment", entityId: id, vehicleId: c.vehicleId, oldValues: { name: compartmentLabel(c) } }, tx);
+    await audit(actor, { action: "compartment.delete", entityType: "VehicleCompartment", entityId: id, vehicleId: c.vehicleId, oldValues: { name: pathLabel(c) } }, tx);
   });
   return { vehicleId: c.vehicleId, parentId: c.parentId };
 }
@@ -221,10 +282,9 @@ export async function copyLoadout(actor: Actor, fromVehicleId: string, toVehicle
   const target = await assertVehicleAccess(actor, toVehicleId, db, false);
   if (target.archivedAt) throw conflict("Das Fahrzeug ist archiviert.");
   const settings = await getSettings();
-  const tree = await db.vehicleCompartment.findMany({ where: { vehicleId: fromVehicleId, parentId: null }, include: { children: true }, orderBy: { sortOrder: "asc" } });
+  const source = flattenTree((await loadTree(fromVehicleId)).roots); // Eltern stehen immer vor ihren Fächern
   const stocks = await db.vehicleMaterialStock.findMany({
     where: { vehicleId: fromVehicleId, active: true, material: { archived: false, ...materialVisibility(actor, settings.medicationsEnabled) } },
-    include: { compartmentRef: { include: { parent: true } } },
   });
   const skippedNarcotics = can(actor, "materials.btm") ? 0 : await db.vehicleMaterialStock.count({ where: { vehicleId: fromVehicleId, active: true, material: { isNarcotic: true } } });
 
@@ -233,18 +293,14 @@ export async function copyLoadout(actor: Actor, fromVehicleId: string, toVehicle
       let compartments = 0;
       let positions = 0;
       const map = new Map<string, string>();
-      for (const c of tree) {
-        const existed = await tx.vehicleCompartment.findFirst({ where: { vehicleId: toVehicleId, parentId: null, name: { equals: c.name, mode: "insensitive" } } });
-        const nc = existed ?? (await tx.vehicleCompartment.create({ data: { vehicleId: toVehicleId, name: c.name, description: c.description, kind: c.kind, sortOrder: c.sortOrder } }));
+      for (const c of source) {
+        const parentId = c.parentId ? (map.get(c.parentId) ?? null) : null;
+        const existed = await tx.vehicleCompartment.findFirst({ where: { vehicleId: toVehicleId, parentId, name: { equals: c.name, mode: "insensitive" } } });
+        const nc = existed ?? (await tx.vehicleCompartment.create({ data: { vehicleId: toVehicleId, parentId, name: c.name, description: c.description, kind: c.kind, sortOrder: c.sortOrder } }));
         if (!existed) compartments++;
         map.set(c.id, nc.id);
-        for (const f of c.children) {
-          const fe = await tx.vehicleCompartment.findFirst({ where: { vehicleId: toVehicleId, parentId: nc.id, name: { equals: f.name, mode: "insensitive" } } });
-          const nf = fe ?? (await tx.vehicleCompartment.create({ data: { vehicleId: toVehicleId, parentId: nc.id, name: f.name, description: f.description, kind: "COMPARTMENT", sortOrder: f.sortOrder } }));
-          if (!fe) compartments++;
-          map.set(f.id, nf.id);
-        }
       }
+      const labels = new Map(source.map((c) => [c.id, pathLabel(c)]));
       for (const s of stocks) {
         const compartmentId = s.compartmentId ? (map.get(s.compartmentId) ?? null) : null;
         const exists = await tx.vehicleMaterialStock.findFirst({ where: { vehicleId: toVehicleId, materialId: s.materialId, compartmentId, active: true } });
@@ -254,7 +310,7 @@ export async function copyLoadout(actor: Actor, fromVehicleId: string, toVehicle
             vehicleId: toVehicleId,
             materialId: s.materialId,
             compartmentId,
-            compartment: compartmentLabel(s.compartmentRef),
+            compartment: s.compartmentId ? (labels.get(s.compartmentId) ?? null) : null,
             targetQuantity: s.targetQuantity,
             minQuantity: s.minQuantity,
             refillLocationId: s.refillLocationId,

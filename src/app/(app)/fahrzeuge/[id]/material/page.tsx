@@ -4,7 +4,7 @@ import { LayoutGrid, List, Package } from "lucide-react";
 import { requireActiveActor } from "@/server/auth/current";
 import { can } from "@/server/actor";
 import { listCategories, listMaterials, listVehicleStock } from "@/server/services/materials";
-import { copySourceOptions, getCompartmentForView, listCompartments, CONTAINER_KINDS } from "@/server/services/compartments";
+import { copySourceOptions, flattenTree, getCompartmentForView, listCompartments, pathLabel, subtreeIds, CONTAINER_KINDS, MAX_DEPTH, ROOT, type TreeNode } from "@/server/services/compartments";
 import { locationOptions } from "@/server/services/warehouse";
 import { notFoundOnError } from "@/server/page-helpers";
 import { Card, EmptyState } from "@/components/ui";
@@ -28,7 +28,14 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
   const manage = can(actor, "materials.manage");
   const [materials, locations, copySources] = manage ? await Promise.all([listMaterials(actor), locationOptions(), copySourceOptions(actor, id)]) : [[], [], []];
   const base = `/fahrzeuge/${id}/material`;
-  const allLocations = tree.flatMap((c) => [{ value: c.id, label: c.name }, ...c.children.map((f) => ({ value: f.id, label: `${c.name} › ${f.name}` }))]);
+  const allNodes = flattenTree(tree);
+  const allLocations = allNodes.map((n) => ({ value: n.id, label: pathLabel(n) }));
+  // Statistik eines Lagerorts inkl. aller Unterfächer
+  const statsDeep = (n: TreeNode) => {
+    const ids = new Set(subtreeIds(n));
+    return statsOf(stocks.filter((s) => s.compartmentId && ids.has(s.compartmentId)));
+  };
+  const countFaecher = (n: TreeNode) => subtreeIds(n).length - 1;
 
   const viewToggle = (
     <div className="flex gap-2">
@@ -133,11 +140,14 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
     if (!loc) notFound();
     const isFach = Boolean(loc.parentId);
     const here = stocks.filter((s) => s.compartmentId === loc.id);
-    const containers = tree.map((c) => ({ value: c.id, label: c.name }));
+    // Verschieben: überallhin außer in sich selbst oder eigene Unterfächer
+    const own = new Set(subtreeIds(loc));
+    const moveTargets = [{ value: ROOT, label: "– oberste Ebene (eigener Schrank/Behälter) –" }, ...allNodes.filter((n) => !own.has(n.id)).map((n) => ({ value: n.id, label: pathLabel(n) }))];
+    const canNest = loc.depth + 1 < MAX_DEPTH;
     return (
       // key: Formulare beim Wechsel zu einem anderen Schrank/Fach neu aufbauen (sonst bleiben alte Eingabewerte stehen)
       <div key={loc.id} className="space-y-5">
-        <Breadcrumb items={[{ label: "Beladung", href: base }, ...(loc.parent ? [{ label: loc.parent.name, href: `${base}?ort=${loc.parent.id}` }] : []), { label: loc.name }]} />
+        <Breadcrumb items={[{ label: "Beladung", href: base }, ...loc.ancestors.map((a) => ({ label: a.name, href: `${base}?ort=${a.id}` })), { label: loc.name }]} />
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-drkblue-900"><KindIcon kind={loc.kind} className="h-8 w-8" /></span>
           <div>
@@ -145,25 +155,26 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
             <p className="text-sm text-gray-600">{COMPARTMENT_KIND[loc.kind]}{loc.parent ? ` in ${loc.parent.name}` : ""}</p>
           </div>
         </div>
-        <LocationHint texts={[loc.parent?.description && `${loc.parent.name}: ${loc.parent.description}`, loc.description]} />
+        <LocationHint texts={[...loc.ancestors.filter((a) => a.description).map((a) => `${a.name}: ${a.description}`), loc.description]} />
 
-        {!isFach && (
+        {(loc.children.length > 0 || (manage && canNest)) && (
           <section className="space-y-3">
             <h3 className="font-bold">Fächer</h3>
             {loc.children.length === 0 ? (
-              <p className="text-sm text-gray-600">{manage ? "Noch keine Fächer – unten anlegen, oder Material direkt hier ablegen." : "Keine Fächer."}</p>
+              <p className="text-sm text-gray-600">Noch keine Fächer – unten anlegen, oder Material direkt hier ablegen.</p>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {loc.children.map((f) => {
-                  const st = statsOf(stocks.filter((s) => s.compartmentId === f.id));
-                  return <LocationCard key={f.id} href={`${base}?ort=${f.id}`} name={f.name} kind={f.kind} detail={`${st.positions} Position(en)`} stats={st} description={f.description} />;
+                  const st = statsDeep(f);
+                  const sub = countFaecher(f);
+                  return <LocationCard key={f.id} href={`${base}?ort=${f.id}`} name={f.name} kind={f.kind} detail={`${sub ? `${sub} Fächer · ` : ""}${st.positions} Position(en)`} stats={st} description={f.description} />;
                 })}
               </div>
             )}
           </section>
         )}
 
-        <Card title={isFach ? "Material in diesem Fach" : "Material direkt in diesem Schrank/Behälter"} padded={here.length === 0}>
+        <Card title={loc.children.length ? `Material direkt in „${loc.name}“` : `Material in „${loc.name}“`} padded={here.length === 0}>
           {here.length === 0 ? <p className="text-sm text-gray-600">Hier liegt noch kein Material.</p> : <StockTable rows={here} vehicleId={id} />}
         </Card>
 
@@ -171,10 +182,11 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
 
         {manage && (
           <div className="grid gap-5 lg:grid-cols-2">
-            {!isFach && (
-              <Card title="Fach anlegen">
+            {canNest && (
+              <Card title={`Fach in „${loc.name}“ anlegen`}>
                 <ActionForm action={createCompartmentAction.bind(null, id, loc.id)} resetOnSuccess>
                   <TextInput label="Name des Fachs" name="name" required placeholder="z. B. Fach 1, Fach Zugang, Seitentasche" />
+                  <SelectInput label="Art" name="kind" required defaultValue="COMPARTMENT" options={CONTAINER_KINDS.map((k) => ({ value: k, label: COMPARTMENT_KIND[k] }))} />
                   <TextArea label="Beschreibung (optional)" name="description" rows={2} placeholder="z. B. linke Innentasche, hinter dem Beatmungsbeutel" />
                   <SubmitButton>Fach anlegen</SubmitButton>
                 </ActionForm>
@@ -184,11 +196,8 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
               <ActionForm action={updateCompartmentAction.bind(null, loc.id, id)}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <TextInput label="Name" name="name" required defaultValue={loc.name} />
-                  {isFach ? (
-                    <SelectInput label="Liegt in" name="parentId" required defaultValue={loc.parentId ?? ""} options={containers} />
-                  ) : (
-                    <SelectInput label="Art" name="kind" required defaultValue={loc.kind} options={CONTAINER_KINDS.map((k) => ({ value: k, label: COMPARTMENT_KIND[k] }))} />
-                  )}
+                  <SelectInput label="Art" name="kind" required defaultValue={loc.kind} options={CONTAINER_KINDS.map((k) => ({ value: k, label: COMPARTMENT_KIND[k] }))} />
+                  <SelectInput label="Liegt in" name="parentId" required defaultValue={loc.parentId ?? ROOT} options={moveTargets} className="sm:col-span-2" />
                   <TextInput label="Reihenfolge" name="sortOrder" type="number" inputMode="numeric" min={0} defaultValue={loc.sortOrder} hint="Kleinere Zahl = weiter vorne (auch beim Check)" />
                 </div>
                 <TextArea label="Beschreibung / Hinweis zum Ort" name="description" rows={3} defaultValue={loc.description ?? ""} hint="Wird in der Beladung und beim Check angezeigt – z. B. wo genau sich das Fach befindet." />
@@ -222,9 +231,8 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {tree.map((c) => {
-            const ids = new Set([c.id, ...c.children.map((f) => f.id)]);
-            const st = statsOf(stocks.filter((s) => s.compartmentId && ids.has(s.compartmentId)));
-            return <LocationCard key={c.id} href={`${base}?ort=${c.id}`} name={c.name} kind={c.kind} detail={`${c.children.length} Fächer · ${st.positions} Position(en)`} stats={st} description={c.description} />;
+            const st = statsDeep(c);
+            return <LocationCard key={c.id} href={`${base}?ort=${c.id}`} name={c.name} kind={c.kind} detail={`${countFaecher(c)} Fächer · ${st.positions} Position(en)`} stats={st} description={c.description} />;
           })}
           {unassigned.length > 0 && (
             <Link href={`${base}?ort=ohne`} className="card flex min-h-24 flex-col justify-center gap-2 border-dashed p-4 hover:bg-gray-50">

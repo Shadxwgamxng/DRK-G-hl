@@ -10,6 +10,7 @@ import { getSettings } from "../settings";
 import { materialVisibility } from "../material-visibility";
 import { changeBatch, changeVehicleQuantity, createMovement, findOrCreateBatch, lockVehicleStock, syncRefillRequest } from "./stock-core";
 import { createDefectTx } from "./defects";
+import { buildTree, flattenTree } from "./compartments";
 
 /**
  * Materialprüfung im Rahmen der Fahrzeugkontrolle: Jede Beladungsposition wird Fach für Fach geprüft.
@@ -29,25 +30,24 @@ export async function materialsForCheck(actor: Actor, vehicleId: string) {
         compartmentRef: { include: { parent: true } },
       },
       orderBy: [{ material: { category: { sortOrder: "asc" } } }, { material: { name: "asc" } }],
-    }).then((rows) => rows.sort(byLocation)),
+    }),
     can(actor, "materials.btm")
       ? Promise.resolve(0)
       : db.vehicleMaterialStock.count({ where: { vehicleId, active: true, material: { isNarcotic: true } } }),
   ]);
-  return { stocks, hiddenNarcotics, expiryWarningDays: settings.expiryWarningDays };
-}
-
-type Located = { compartmentRef: { name: string; sortOrder: number; parent: { name: string; sortOrder: number } | null } | null };
-/** Reihenfolge wie im Fahrzeug: Schrank für Schrank, Fach für Fach; Positionen ohne Lagerort zuletzt. */
-function locationKey(s: Located): [number, string, number, string] {
-  const c = s.compartmentRef;
-  if (!c) return [Number.MAX_SAFE_INTEGER, "", 0, ""];
-  return c.parent ? [c.parent.sortOrder, c.parent.name, c.sortOrder, c.name] : [c.sortOrder, c.name, -1, ""];
-}
-function byLocation(a: Located, b: Located) {
-  const [a1, a2, a3, a4] = locationKey(a);
-  const [b1, b2, b3, b4] = locationKey(b);
-  return a1 - b1 || a2.localeCompare(b2, "de") || a3 - b3 || a4.localeCompare(b4, "de");
+  // Reihenfolge wie im Fahrzeug (Schrank für Schrank, Fach für Fach, auch verschachtelt) und Ortshinweise
+  const { roots, byId } = buildTree(await db.vehicleCompartment.findMany({ where: { vehicleId } }));
+  const order = new Map(flattenTree(roots).map((n, i) => [n.id, i]));
+  const hintOf = (id: string | null) => {
+    const n = id ? byId.get(id) : undefined;
+    if (!n) return null;
+    const lines = [...n.ancestors.filter((a) => a.description).map((a) => `${a.name}: ${a.description}`), ...(n.description ? [n.description] : [])];
+    return lines.join("\n") || null;
+  };
+  const sorted = stocks
+    .map((s) => ({ ...s, locationHint: hintOf(s.compartmentId) }))
+    .sort((a, b) => (order.get(a.compartmentId ?? "") ?? Number.MAX_SAFE_INTEGER) - (order.get(b.compartmentId ?? "") ?? Number.MAX_SAFE_INTEGER));
+  return { stocks: sorted, hiddenNarcotics, expiryWarningDays: settings.expiryWarningDays };
 }
 
 export const CHECK_MATERIAL_STATUSES = ["OK", "DEVIATION", "DEFECT"] as const;
