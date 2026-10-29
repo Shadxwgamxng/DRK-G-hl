@@ -80,6 +80,13 @@ export async function validateMaterialResults(actor: Actor, vehicleId: string, r
     if (r.status === "DEFECT" && !s.material.isEquipment) fe[`mat_${r.stockId}`] = "„Defekt“ nur bei Geräten";
     if (r.status === "DEFECT" && !r.note) fe[`matnote_${r.stockId}`] = "Bitte den Defekt beschreiben";
     if (s.material.isNarcotic) for (const nb of r.newBatches ?? []) if (!nb.batchNumber) fe[`mat_${r.stockId}`] = "Chargennummer ist bei BtM Pflicht";
+    // Gebuchte Stücke ohne Verfallsdatum (MHD): müssen bei dieser Kontrolle mit MHD neu erfasst werden
+    const undated = s.material.batchTracked ? s.batches.filter((b) => !b.expiryDate) : [];
+    if (undated.length) {
+      const qty = undated.reduce((n, b) => n + b.quantity, 0);
+      const replaced = r.status === "DEVIATION" && undated.every((b) => r.batches?.some((rb) => rb.batchId === b.id && rb.counted === 0));
+      if (!replaced) fe[`mat_${r.stockId}`] = `Bitte das Verfallsdatum (MHD) für ${qty} ${s.material.unit} angeben.`;
+    }
     // „Vollständig“ bei Material mit Verfallsdatum, aber zu wenig gebucht: Verfallsdatum der übrigen Stücke ist unbekannt
     if (r.status === "OK" && s.material.batchTracked && s.currentQuantity < s.targetQuantity)
       fe[`mat_${r.stockId}`] = `Gebucht sind erst ${s.currentQuantity} von ${s.targetQuantity}. Bitte unter „Abweichung“ das Verfallsdatum der übrigen Stücke eintragen.`;

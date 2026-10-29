@@ -30,8 +30,10 @@ export type MaterialState = {
 
 const NO_COMPARTMENT = "Ohne Lagerort";
 
-/** Soll ist höher als gebucht und die Stücke brauchen ein Verfallsdatum (z. B. bei der Ersteinrichtung). */
-const needsExpiry = (s: CheckStock) => s.batchTracked && s.current < s.target;
+/** Gebuchte Stücke ohne Verfallsdatum (z. B. nach nachträglichem Einschalten von „Mit Verfallsdatum“). */
+const undatedQty = (s: CheckStock) => s.batches.filter((b) => !b.expiryDate).reduce((n, b) => n + b.quantity, 0);
+/** Verfallsdatum (MHD) muss angegeben werden: Soll höher als gebucht oder Stücke ohne MHD. */
+const needsExpiry = (s: CheckStock) => s.batchTracked && (s.current < s.target || undatedQty(s) > 0);
 
 /** Wandelt den Formularzustand in die Nutzdaten für den Server um. */
 export function materialPayload(stocks: CheckStock[], state: Record<string, MaterialState>) {
@@ -42,7 +44,10 @@ export function materialPayload(stocks: CheckStock[], state: Record<string, Mate
       stockId: s.id,
       status: m.status,
       counted: dev && !s.batchTracked ? (m.counted ?? String(s.current)) : undefined,
-      batches: dev && s.batchTracked ? s.batches.map((b) => ({ batchId: b.id, counted: m.batches?.[b.id]?.counted ?? String(b.quantity), expiredRemoved: Boolean(m.batches?.[b.id]?.expiredRemoved) })) : undefined,
+      batches:
+        dev && s.batchTracked
+          ? s.batches.map((b) => ({ batchId: b.id, counted: !b.expiryDate ? "0" : (m.batches?.[b.id]?.counted ?? String(b.quantity)), expiredRemoved: Boolean(m.batches?.[b.id]?.expiredRemoved) }))
+          : undefined,
       newBatches: dev && s.batchTracked ? (m.newBatches ?? []).filter((n) => n.expiryDate || n.quantity || n.batchNumber) : undefined,
       note: m.note?.trim() || undefined,
     };
@@ -55,6 +60,7 @@ export function materialProblems(stocks: CheckStock[], state: Record<string, Mat
   for (const s of stocks) {
     const m = state[s.id];
     if (!m?.status) fields[`mat_${s.id}`] = "Bitte prüfen";
+    else if (m.status === "OK" && s.batchTracked && undatedQty(s) > 0) fields[`mat_${s.id}`] = "Bitte das Verfallsdatum (MHD) angeben";
     else if (m.status === "DEFECT" && !m.note?.trim()) fields[`matnote_${s.id}`] = "Bitte den Defekt beschreiben";
     else if (m.status === "DEVIATION")
       for (const n of m.newBatches ?? []) {
@@ -153,8 +159,8 @@ export function CheckMaterials({
                     batches: m.batches ?? Object.fromEntries(s.batches.map((b) => [b.id, { counted: String(b.quantity) }])),
                     newBatches:
                       m.newBatches ??
-                      (s.batchTracked && (s.batches.length === 0 || prefillMissing)
-                        ? [{ expiryDate: "", batchNumber: "", quantity: prefillMissing ? String(s.target - s.current) : "" }]
+                      (s.batchTracked && (s.batches.length === 0 || prefillMissing || undatedQty(s) > 0)
+                        ? [{ expiryDate: "", batchNumber: "", quantity: String(undatedQty(s) + (prefillMissing ? Math.max(0, s.target - s.current) : 0) || "") }]
                         : []),
                   });
                 // „Vollständig“: bei fehlender Buchung mit Verfallsdatum direkt die Zeile für die übrigen Stücke öffnen
@@ -201,8 +207,8 @@ export function CheckMaterials({
                         </ChoiceButton>
                       )}
                     </div>
-                    {!m.status && s.batches.some((b) => !b.expiryDate) && (
-                      <p className="mt-2 text-sm text-drkblue-900">Tipp: Unter „Abweichung“ bei „ohne“ 0 eintragen und die Stücke mit ihrem Verfallsdatum neu erfassen.</p>
+                    {!m.status && undatedQty(s) > 0 && (
+                      <p className="mt-2 text-sm font-semibold text-drkblue-900">Verfallsdatum (MHD) für {undatedQty(s)} {s.unit} fehlt – bitte bei dieser Kontrolle angeben.</p>
                     )}
                     {m.status === "OK" && expired.length > 0 && (
                       <p className="mt-2 text-sm font-semibold text-drk-700">Abgelaufene Stücke vorhanden – bitte unter „Abweichung“ als entnommen markieren.</p>
@@ -222,10 +228,13 @@ export function CheckMaterials({
                       <div className="mt-3 space-y-2">
                         {needsExpiry(s) && (
                           <p className="text-sm font-semibold text-drkblue-900">
-                            Erst {s.current} von {s.target} {s.unit} erfasst – bitte das Verfallsdatum der übrigen Stücke eintragen (bei unterschiedlichen Daten weitere Zeile hinzufügen).
+                            {undatedQty(s) > 0
+                              ? `${undatedQty(s)} ${s.unit} ohne Verfallsdatum (MHD) – bitte unten mit MHD erfassen`
+                              : `Erst ${s.current} von ${s.target} ${s.unit} erfasst – bitte das Verfallsdatum der übrigen Stücke eintragen`}{" "}
+                            (bei unterschiedlichen Daten weitere Zeile hinzufügen).
                           </p>
                         )}
-                        {s.batches.map((b) => {
+                        {s.batches.filter((b) => b.expiryDate).map((b) => {
                           const row = m.batches?.[b.id] ?? { counted: String(b.quantity) };
                           const isExpired = Boolean(b.expiryDate && b.expiryDate.slice(0, 10) < today);
                           return (

@@ -287,3 +287,29 @@ describe("„Mit Verfallsdatum“ nachträglich umschalten", () => {
     expect((await db.material.findUniqueOrThrow({ where: { id: m.id } })).batchTracked).toBe(false);
   });
 });
+
+describe("MHD-Pflicht nach dem Umschalten", () => {
+  it("verlangt beim nächsten Check das Verfallsdatum für Stücke ohne MHD", async () => {
+    const { updateMaterial } = await import("@/server/services/materials");
+    const { admin, user, v, checklist, results, sPlain, sDated, sDevice } = await setup();
+    const m = await makeMaterial({ name: "Pflaster" });
+    const s = await createVehicleStock(admin, v.id, { materialId: m.id, targetQuantity: 5, minQuantity: 0, compartment: "Fach 1" }, { quantity: 5 });
+    await updateMaterial(admin, m.id, { name: m.name, categoryId: m.categoryId, unit: m.unit, batchTracked: "on" });
+    const undated = await db.materialBatch.findFirstOrThrow({ where: { vehicleStockId: s.id, quantity: { gt: 0 } } });
+    const base = [sPlain, sDated, sDevice].map((x) => ({ stockId: x.id, status: "OK" }));
+    const run = (mat: unknown) => performCheck(user, v.id, { checklistId: checklist.id, checkType: "ROUTINE", results, materialsLoadedAt: new Date().toISOString(), materials: [...base, mat] });
+
+    // „Vollständig“ ohne MHD wird abgelehnt
+    await expect(run({ stockId: s.id, status: "OK" })).rejects.toMatchObject({ code: "VALIDATION", fieldErrors: { [`mat_${s.id}`]: expect.stringContaining("MHD") } });
+    // Abweichung, ohne die Stücke ohne MHD zu ersetzen, ebenfalls
+    await expect(run({ stockId: s.id, status: "DEVIATION", batches: [{ batchId: undated.id, counted: "5" }], newBatches: [] })).rejects.toMatchObject({ code: "VALIDATION" });
+
+    const mhd = addDays(berlinToday(), 365);
+    await run({ stockId: s.id, status: "DEVIATION", batches: [{ batchId: undated.id, counted: "0" }], newBatches: [{ expiryDate: toDateInput(mhd), batchNumber: "", quantity: "5" }] });
+    const after = await db.vehicleMaterialStock.findUniqueOrThrow({ where: { id: s.id }, include: { batches: { where: { quantity: { gt: 0 } } } } });
+    expect(after.currentQuantity).toBe(5);
+    expect(after.batches).toHaveLength(1);
+    expect(after.batches[0].expiryDate?.toISOString()).toBe(mhd.toISOString());
+    expect(await db.refillRequest.count({ where: { vehicleStockId: s.id, status: "OPEN" } })).toBe(0);
+  });
+});
