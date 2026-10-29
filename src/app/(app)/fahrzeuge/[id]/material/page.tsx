@@ -135,7 +135,8 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
     const here = stocks.filter((s) => s.compartmentId === loc.id);
     const containers = tree.map((c) => ({ value: c.id, label: c.name }));
     return (
-      <div className="space-y-5">
+      // key: Formulare beim Wechsel zu einem anderen Schrank/Fach neu aufbauen (sonst bleiben alte Eingabewerte stehen)
+      <div key={loc.id} className="space-y-5">
         <Breadcrumb items={[{ label: "Beladung", href: base }, ...(loc.parent ? [{ label: loc.parent.name, href: `${base}?ort=${loc.parent.id}` }] : []), { label: loc.name }]} />
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-drkblue-900"><KindIcon kind={loc.kind} className="h-8 w-8" /></span>
