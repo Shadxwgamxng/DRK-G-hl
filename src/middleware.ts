@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC = ["/login", "/registrieren", "/datenschutz", "/nutzungsbedingungen", "/offline", "/api/health", "/api/cron"];
+const PUBLIC = ["/login", "/registrieren", "/datenschutz", "/nutzungsbedingungen", "/offline", "/api/health", "/api/cron", "/verbrauch"];
 
 /**
  * Grobe Vorprüfung (Edge): ohne Sitzungscookie → Login. Die eigentliche Prüfung der Sitzung und

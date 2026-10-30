@@ -24,6 +24,7 @@ export async function updateSettings(actor: Actor, input: Partial<AppSettings>) 
   if (input.medicationsEnabled !== undefined) next.medicationsEnabled = Boolean(input.medicationsEnabled);
   if (input.emailNotificationsEnabled !== undefined) next.emailNotificationsEnabled = Boolean(input.emailNotificationsEnabled);
   if (input.multiVehicleAssignmentEnabled !== undefined) next.multiVehicleAssignmentEnabled = Boolean(input.multiVehicleAssignmentEnabled);
+  if (input.qrConsumptionEnabled !== undefined) next.qrConsumptionEnabled = Boolean(input.qrConsumptionEnabled);
   if (input.expiryWarningDays !== undefined) {
     const n = Number(input.expiryWarningDays);
     if (!Number.isInteger(n) || n < 1 || n > 365) throw invalid("Vorwarnzeit muss zwischen 1 und 365 Tagen liegen.", { expiryWarningDays: "1–365" });

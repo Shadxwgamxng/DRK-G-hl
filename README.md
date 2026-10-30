@@ -69,6 +69,10 @@ DATABASE_URL=…/drk_kfz_demo DEMO_MODE=true npm run db:demo
 - **Ersteinrichtung:** Neue Positionen ohne Anfangsbestand erzeugen noch keine Nachfüllung; beim ersten Check die tatsächlichen Mengen erfassen – danach gleicht jeder Check die Nachfüllliste ab.
 - **Materialprüfung bei jeder Kontrolle:** Die gesamte Beladung wird Fach für Fach angezeigt (Soll, gebuchte Menge, Verfallsdaten). Je Position „Vollständig“ (= Soll-Menge vorhanden), „Abweichung“ (tatsächliche Menge je Verfallsdatum, abgelaufene Stücke „entnommen“, weitere Stücke mit Verfallsdatum erfassen) oder bei Geräten „Defekt“. Abweichungen werden als Korrektur bzw. „abgelaufen“ gebucht, Fehlmengen kommen automatisch auf die Nachfüllliste, Defekte werden als Mangel gemeldet. Das Ergebnis ist Teil der revisionssicheren Kontrolle.
 
+## Testfunktion: Verbrauch per QR-Code melden (standardmäßig aus)
+
+Unter *Verwaltung → Einstellungen* freischaltbar. Danach gibt es je Fahrzeug unter **„QR Verbrauch“** eine druckfertige QR-Karte (z. B. für die Fahrzeugmappe). Wer sie scannt, kann **ohne Anmeldung** verbrauchtes Material melden (Anlass, Datum, Name, Mengen). Die Mengen werden als „verbraucht“ ausgetragen (früheste Verfallsdaten zuerst) und landen auf der Nachfüllliste; der KFZ-Wart wird benachrichtigt. Schutz: geheimer, erneuerbarer Link je Fahrzeug, keine Bestände sichtbar, keine BtM/Geräte, Mengen- und Ratenbegrenzung, Bot-Schutz, Protokollierung (technischer Benutzer „QR-Meldung (ohne Login)“, nicht anmeldbar).
+
 ## Getroffene Standardentscheidungen
 
 - **Logo & Design:** Gestaltung nach dem DRK-Styleguide (styleguide.drk.de): Wort-Bild-Marke des Ortsvereins (`public/brand/drk-goehl-logo.png`) ausschließlich auf weißem Grund, digital mind. 60 px hoch mit Schutzzone; Web-Farbpalette (DRK-Rot, Dunkelrot, Dunkelblau, Mittel-/Volltonblau, Hellblau, Dunkel-/Mittel-/Hellgrau); Hausschrift Helvetica Neue mit Ersatzschriften Open Sans → Arial. App-Icon und Favicon zeigen das runde Abzeichen der Bereitschaft Göhl auf Weiß (`public/brand/bereitschaft-goehl-logo.png`). Die Logovorlage ist nur 430×93 px; eine hochauflösende Datei/SVG sollte nachgereicht werden.

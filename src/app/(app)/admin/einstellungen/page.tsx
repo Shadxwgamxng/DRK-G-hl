@@ -28,6 +28,7 @@ export default async function SettingsPage() {
               <TextInput label="Vorwarnzeit Verfallsdatum (Tage)" name="expiryWarningDays" type="number" min={1} max={365} defaultValue={s.expiryWarningDays} required />
             </div>
             <Checkbox name="medicationsEnabled" label="Medikamentenverwaltung freischalten" hint="Nur aktivieren, wenn dies organisatorisch und rechtlich (z. B. BtM, Lagerung) geklärt ist." defaultChecked={s.medicationsEnabled} />
+            <Checkbox name="qrConsumptionEnabled" label="Testfunktion: Verbrauch per QR-Code melden (ohne Login)" hint="Je Fahrzeug ein QR-Code (z. B. für die Fahrzeugmappe). Wer ihn scannt, kann verbrauchtes Material melden – es wird ausgetragen und landet auf der Nachfüllliste. BtM sind ausgeschlossen." defaultChecked={s.qrConsumptionEnabled} />
             <Checkbox name="multiVehicleAssignmentEnabled" label="Mehrfache Fahrzeugzuweisung erlauben" hint="Zusätzlich je Benutzer zu aktivieren." defaultChecked={s.multiVehicleAssignmentEnabled} />
             <Checkbox name="emailNotificationsEnabled" label="E-Mail-Benachrichtigungen versenden" hint={mailConfigured() ? "SMTP ist konfiguriert." : "SMTP ist nicht konfiguriert (Umgebungsvariablen SMTP_*)."} defaultChecked={s.emailNotificationsEnabled} />
             <SubmitButton>Einstellungen speichern</SubmitButton>

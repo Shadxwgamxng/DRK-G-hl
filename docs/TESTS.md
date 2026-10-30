@@ -1,6 +1,6 @@
 # Abnahmetests
 
-Automatisierte Integrationstests laufen mit Vitest gegen eine echte PostgreSQL-Testdatenbank (inkl. Triggern und Constraints): `npm test`. Stand: **51 Tests, alle bestanden.**
+Automatisierte Integrationstests laufen mit Vitest gegen eine echte PostgreSQL-Testdatenbank (inkl. Triggern und Constraints): `npm test`. Stand: **54 Tests, alle bestanden.**
 
 | Nr. | Szenario | Nachweis |
 |---|---|---|
@@ -22,6 +22,7 @@ Automatisierte Integrationstests laufen mit Vitest gegen eine echte PostgreSQL-T
 | 16 | Bedienung Android/iOS/Tablet/Desktop | Browser-E2E (Playwright, Chromium mit Geräteprofilen iPhone 13, Pixel 7, iPad, Desktop 1440 px) – Login, Kontrolle, Mangel mit Foto, Austragen, Navigation, Exporte, keine Konsolenfehler |
 | – | Materialkatalog-Import (idempotent), Materialprüfung bei der Kontrolle (Abweichung, abgelaufen entnommen, neues Verfallsdatum, Gerät defekt → Mangel, Nachfüllliste, Revisionssicherheit, doppelte Synchronisation), BtM-Sichtbarkeit und Chargennummer-Pflicht | `tests/material-check.test.ts` |
 | – | Schränke & Fächer: verschachtelt bis 5 Ebenen, kein Fach in sich selbst (auch per DB-Trigger), Material in mehreren Fächern, keine fremden Lagerorte, Löschen nur wenn leer, Check-Reihenfolge, Übernahme von Freitext-Altdaten, Beladung kopieren | `tests/compartments.test.ts` |
+| – | Testfunktion QR-Verbrauchsmeldung: Buchung (FIFO nach Verfall), Nachfüllliste, keine Geräte/fremden Positionen, Bot-Feld, Datum, Ratenbegrenzung, Erneuern des Links, ausgeschaltet nicht erreichbar | `tests/consumption.test.ts` |
 | 17 | Offline erfasste Vorgänge werden synchronisiert (idempotent, Konflikterkennung) | `tests/checks-defects.test.ts`, Browser-E2E (Offline-Mangel mit Foto → automatische Übertragung) |
 
 **Grenzen:** Die Gerätetests liefen mit Chromium-Emulation. Echte Tests auf iOS-Safari (Installation, Kamera, Speicherverhalten) und Android-Geräten sind vor Inbetriebnahme manuell durchzuführen. Web-Push ist nicht implementiert (In-App + optional E-Mail).

@@ -172,3 +172,11 @@ button:not(:disabled):active { transform: scale(0.98); }
   }
   .lift:hover { transform: none; }
 }
+
+/* Druck der QR-Karte: nur die Karte ausgeben */
+@media print {
+  body:has(#qr-karte) * { visibility: hidden; }
+  body:has(#qr-karte) #qr-karte,
+  body:has(#qr-karte) #qr-karte * { visibility: visible; }
+  body:has(#qr-karte) #qr-karte { position: absolute; left: 0; top: 0; }
+}

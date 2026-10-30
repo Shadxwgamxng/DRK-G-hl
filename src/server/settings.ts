@@ -9,6 +9,8 @@ export type AppSettings = {
   emailNotificationsEnabled: boolean;
   /** Mehrfache Fahrzeugzuweisung grundsätzlich erlauben (zusätzlich pro Benutzer). */
   multiVehicleAssignmentEnabled: boolean;
+  /** Testfunktion: Verbrauch per QR-Code ohne Login melden. */
+  qrConsumptionEnabled: boolean;
   /** Organisationsname für Berichte. */
   organizationName: string;
   /** Wird ausschließlich vom Demo-Seed gesetzt – zeigt einen deutlichen Hinweis in der Oberfläche. */
@@ -20,6 +22,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   expiryWarningDays: 30,
   emailNotificationsEnabled: false,
   multiVehicleAssignmentEnabled: true,
+  qrConsumptionEnabled: false,
   organizationName: "DRK Göhl – KFZ-Warte",
   demoMode: false,
 };

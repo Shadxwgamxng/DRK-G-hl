@@ -161,16 +161,19 @@ model Vehicle {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
-  assignments    VehicleAssignment[]
-  checks         VehicleCheck[]
-  inspections    Inspection[]
-  maintenance    MaintenanceRecord[]
-  stocks         VehicleMaterialStock[]
-  compartments   VehicleCompartment[]
-  refillRequests RefillRequest[]
-  defects        Defect[]
-  attachments    Attachment[]           @relation("VehicleAttachments")
-  statusChanges  VehicleStatusChange[]
+  assignments        VehicleAssignment[]
+  checks             VehicleCheck[]
+  inspections        Inspection[]
+  maintenance        MaintenanceRecord[]
+  stocks             VehicleMaterialStock[]
+  compartments       VehicleCompartment[]
+  // Testfunktion: Verbrauch per QR-Code ohne Login melden (geheimer Link je Fahrzeug)
+  consumptionToken   String?                @unique
+  consumptionReports ConsumptionReport[]
+  refillRequests     RefillRequest[]
+  defects            Defect[]
+  attachments        Attachment[]           @relation("VehicleAttachments")
+  statusChanges      VehicleStatusChange[]
 
   @@index([status])
   @@index([typeId])
@@ -836,4 +839,20 @@ model Setting {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
+}
+
+// Testfunktion: Verbrauchsmeldung nach Einsatz/Sanitätsdienst per QR-Code (ohne Login)
+model ConsumptionReport {
+  id           String   @id @default(cuid())
+  vehicleId    String
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  occasion     String // Einsatz, Sanitätsdienst, Veranstaltung, Übung, Sonstiges
+  occurredOn   DateTime @db.Date
+  reporterName String
+  note         String?
+  items        Json // [{ material, compartment, unit, reported, booked }]
+  ipHash       String?
+  createdAt    DateTime @default(now())
+
+  @@index([vehicleId, createdAt])
 }

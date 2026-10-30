@@ -95,6 +95,7 @@ export async function updateSettingsAction(_: ActionState, fd: FormData): Promis
       medicationsEnabled: fd.get("medicationsEnabled") === "on",
       emailNotificationsEnabled: fd.get("emailNotificationsEnabled") === "on",
       multiVehicleAssignmentEnabled: fd.get("multiVehicleAssignmentEnabled") === "on",
+      qrConsumptionEnabled: fd.get("qrConsumptionEnabled") === "on",
     });
     revalidatePath("/admin/einstellungen");
     return { message: "Einstellungen gespeichert." };

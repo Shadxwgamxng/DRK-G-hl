@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { AlertOctagon, ClipboardCheck, Package, Pencil, TriangleAlert } from "lucide-react";
+import { AlertOctagon, ClipboardCheck, Package, Pencil, QrCode, TriangleAlert } from "lucide-react";
+import { getSettings } from "@/server/settings";
 import { requireActiveActor } from "@/server/auth/current";
 import { can } from "@/server/actor";
 import { getVehicle } from "@/server/services/vehicles";
@@ -20,6 +21,7 @@ export default async function VehiclePage({ params, searchParams }: { params: Pr
   const { id } = await params;
   const sp = await searchParams;
   const v = await notFoundOnError(() => getVehicle(actor, id));
+  const qrEnabled = (await getSettings()).qrConsumptionEnabled;
   const canPlanInspections = can(actor, "inspections.manage") && can(actor, "inspections.view");
   const openDefects = await listDefects(actor, { vehicleId: id, status: "open" }, 10);
   const criticalOpen = openDefects.filter((d) => d.severity === "CRITICAL" && d.status !== "RESOLVED");
@@ -55,6 +57,11 @@ export default async function VehiclePage({ params, searchParams }: { params: Pr
           {can(actor, "materials.view") && (
             <LinkButton href={`/fahrzeuge/${id}/material`} size="lg" variant="secondary">
               <Package className="h-6 w-6" aria-hidden /> Material
+            </LinkButton>
+          )}
+          {qrEnabled && can(actor, "materials.manage") && (
+            <LinkButton href={`/fahrzeuge/${id}/qr`} size="lg" variant="secondary">
+              <QrCode className="h-5 w-5" aria-hidden /> QR Verbrauch
             </LinkButton>
           )}
           {can(actor, "vehicles.manage") && (
