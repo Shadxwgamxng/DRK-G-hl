@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import clsx from "clsx";
-import { CheckCircle2, Minus, Plus, Search } from "lucide-react";
+import { CheckCircle2, Loader2, Minus, PenLine, Plus, Search, ShieldAlert } from "lucide-react";
 import { matches } from "@/lib/search-match";
 import type { ConsumptionResult } from "@/app/actions/consumption";
-import { Alert } from "./ui";
-import { SubmitButton } from "./forms";
+import { Alert, Button } from "./ui";
+import { SignaturePad } from "./signature-pad";
 
 type Item = { stockId: string; name: string; unit: string; location: string };
 
@@ -27,6 +27,31 @@ export function ConsumptionForm({
   const [qty, setQty] = useState<Record<string, number>>({});
   const [q, setQ] = useState("");
   const [occasion, setOccasion] = useState("");
+  const [btm, setBtm] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [localError, setLocalError] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+  const sigRef = useRef<HTMLInputElement>(null);
+  useEffect(() => setSending(false), [state]);
+
+  // Vor dem Absenden prüfen, dann Unterschrift (Querformat) einholen
+  const startSigning = () => {
+    const name = (formRef.current?.elements.namedItem("reporterName") as HTMLInputElement | null)?.value.trim();
+    const problem = !occasion ? "Bitte den Anlass wählen." : !name ? "Bitte Ihren Namen eintragen." : !total && !btm ? "Bitte verbrauchtes Material eintragen oder „BtM verbraucht“ ankreuzen." : "";
+    setLocalError(problem);
+    if (problem) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    setSigning(true);
+  };
+  const signed = (png: string) => {
+    if (sigRef.current) sigRef.current.value = png;
+    setSigning(false);
+    setSending(true);
+    formRef.current?.requestSubmit();
+  };
   const total = Object.values(qty).reduce((n, v) => n + v, 0);
   const visible = useMemo(() => items.filter((i) => !q.trim() || matches(`${i.name} ${i.location}`, q)), [items, q]);
   const groups = useMemo(() => {
@@ -50,19 +75,25 @@ export function ConsumptionForm({
             </li>
           ))}
         </ul>
+        {state.done.btmUsed && (
+          <Alert tone="warning" className="mt-4 text-left" title="BtM-Verbrauch gemeldet">
+            Die zuständige Person wurde sofort informiert und führt eine außerordentliche Kontrolle des Fahrzeugs durch.
+          </Alert>
+        )}
         <p className="mt-4 text-xs text-gray-500">Sie können dieses Fenster jetzt schließen.</p>
       </div>
     );
   }
 
   return (
-    <form action={formAction} className="space-y-5" noValidate>
+    <form ref={formRef} action={formAction} className="space-y-5" noValidate>
+      <input ref={sigRef} type="hidden" name="signature" />
       <div>
         <p className="text-sm font-bold uppercase tracking-wide text-drkblue-600">Verbrauch melden</p>
         <h1 className="text-2xl font-bold">{vehicle}</h1>
         <p className="mt-1 text-sm text-gray-600">Nach Einsatz, Sanitätsdienst oder Veranstaltung: einfach eintragen, was verbraucht wurde – es landet automatisch auf der Nachfüllliste.</p>
       </div>
-      {state.message && !state.ok && <Alert tone="error" title={state.message} />}
+      {(localError || (state.message && !state.ok)) && <Alert tone="error" title={localError || state.message} />}
 
       <fieldset className="card space-y-4 p-4">
         <legend className="sr-only">Angaben zum Einsatz</legend>
@@ -130,16 +161,40 @@ export function ConsumptionForm({
           .map(([id, n]) => <input key={id} type="hidden" name={`qty_${id}`} value={n} />)}
       </section>
 
+      <div className={clsx("card space-y-3 p-4", btm && "border-amber-400 bg-amber-50")}>
+        <label className="flex min-h-11 items-start gap-3">
+          <input type="checkbox" name="btmUsed" className="mt-1 h-6 w-6 accent-drk-500" checked={btm} onChange={(e) => setBtm(e.target.checked)} />
+          <span>
+            <span className="flex items-center gap-1.5 font-bold"><ShieldAlert className="h-5 w-5 text-drk-500" aria-hidden /> Es wurden Betäubungsmittel (BtM) verbraucht</span>
+            <span className="block text-xs text-gray-600">BtM werden hier nicht gebucht. Die zuständige Person wird sofort informiert und führt eine außerordentliche Kontrolle des Fahrzeugs durch.</span>
+          </span>
+        </label>
+        {btm && (
+          <div>
+            <label className="label" htmlFor="missionNumber">Einsatz- / Protokollnummer</label>
+            <input id="missionNumber" name="missionNumber" className="input" placeholder="z. B. 2026-0815" />
+          </div>
+        )}
+      </div>
+
       <div className="card p-4">
         <label className="label" htmlFor="note">Bemerkung (optional)</label>
         <textarea id="note" name="note" rows={2} className="input" placeholder="z. B. Patient mit Schnittverletzung, Rucksack noch nicht aufgefüllt" />
       </div>
 
       <div className="sticky bottom-0 -mx-4 border-t border-gray-300 bg-white/95 px-4 py-3 backdrop-blur">
-        <SubmitButton size="lg" className="w-full">
-          {total ? `${total} Teil(e) melden` : "Verbrauch melden"}
-        </SubmitButton>
+        <Button type="button" size="lg" className="w-full" onClick={startSigning} disabled={sending}>
+          {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <PenLine className="h-5 w-5" />}
+          {sending ? "Wird gesendet …" : total ? `${total} Teil(e) melden – unterschreiben` : btm ? "BtM-Verbrauch melden – unterschreiben" : "Verbrauch melden"}
+        </Button>
       </div>
+      {signing && (
+        <SignaturePad
+          name={(formRef.current?.elements.namedItem("reporterName") as HTMLInputElement | null)?.value ?? ""}
+          onCancel={() => setSigning(false)}
+          onConfirm={signed}
+        />
+      )}
     </form>
   );
 }

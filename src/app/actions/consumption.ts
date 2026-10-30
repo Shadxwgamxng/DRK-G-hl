@@ -6,7 +6,7 @@ import { errorState, runAction } from "@/server/action";
 import { clientIp } from "@/server/auth/current";
 import { consumptionLink, submitPublicConsumption } from "@/server/services/consumption";
 
-export type ConsumptionResult = ActionState & { done?: { vehicle: string; lines: { material: string; unit: string; reported: number }[] } };
+export type ConsumptionResult = ActionState & { done?: { vehicle: string; btmUsed: boolean; lines: { material: string; unit: string; reported: number }[] } };
 
 /** Öffentlich (ohne Login) – Zugriff nur über den geheimen Fahrzeug-Link. */
 export async function submitConsumptionAction(token: string, _: ConsumptionResult, fd: FormData): Promise<ConsumptionResult> {
@@ -16,10 +16,20 @@ export async function submitConsumptionAction(token: string, _: ConsumptionResul
       .map(([k, v]) => ({ stockId: k.slice(4), quantity: Number(v) }));
     const res = await submitPublicConsumption(
       token,
-      { occasion: fd.get("occasion"), occurredOn: fd.get("occurredOn"), reporterName: fd.get("reporterName"), note: fd.get("note"), website: fd.get("website") ?? "", items },
+      {
+        occasion: fd.get("occasion"),
+        occurredOn: fd.get("occurredOn"),
+        reporterName: fd.get("reporterName"),
+        note: fd.get("note"),
+        btmUsed: fd.get("btmUsed"),
+        missionNumber: fd.get("missionNumber"),
+        signature: fd.get("signature") || undefined,
+        website: fd.get("website") ?? "",
+        items,
+      },
       await clientIp(),
     );
-    return { ok: true, ts: Date.now(), message: "Danke!", done: { vehicle: res.vehicleName, lines: res.lines.map((l) => ({ material: l.material, unit: l.unit, reported: l.reported })) } };
+    return { ok: true, ts: Date.now(), message: "Danke!", done: { vehicle: res.vehicleName, btmUsed: res.report.btmUsed, lines: res.lines.map((l) => ({ material: l.material, unit: l.unit, reported: l.reported })) } };
   } catch (e) {
     return errorState(e);
   }

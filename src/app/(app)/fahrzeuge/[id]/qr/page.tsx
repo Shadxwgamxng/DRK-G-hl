@@ -5,7 +5,7 @@ import { getSettings } from "@/server/settings";
 import { getVehicle } from "@/server/services/vehicles";
 import { consumptionLink, listConsumptionReports } from "@/server/services/consumption";
 import { notFoundOnError } from "@/server/page-helpers";
-import { Alert, Card, TableWrap } from "@/components/ui";
+import { Alert, Badge, Card, TableWrap } from "@/components/ui";
 import { InlineAction } from "@/components/forms";
 import { PrintButton } from "@/components/print-button";
 import { renewConsumptionLinkAction } from "@/app/actions/consumption";
@@ -60,7 +60,7 @@ export default async function VehicleQrPage({ params }: { params: Promise<{ id: 
         ) : (
           <TableWrap>
             <table className="table-base">
-              <thead><tr><th>Eingegangen</th><th>Anlass</th><th>Datum</th><th>Gemeldet von</th><th>Material</th></tr></thead>
+              <thead><tr><th>Eingegangen</th><th>Anlass</th><th>Datum</th><th>Gemeldet von</th><th>Material</th><th>Unterschrift</th></tr></thead>
               <tbody>
                 {reports.map((r) => (
                   <tr key={r.id}>
@@ -69,8 +69,17 @@ export default async function VehicleQrPage({ params }: { params: Promise<{ id: 
                     <td>{fmtDate(r.occurredOn)}</td>
                     <td>{r.reporterName}</td>
                     <td className="text-sm">
-                      {(r.items as { material: string; reported: number; unit: string }[]).map((l) => `${l.reported} × ${l.material}`).join(", ")}
+                      {r.btmUsed && <Badge tone="red" className="mb-1">BtM verbraucht{r.missionNumber ? ` · Einsatz ${r.missionNumber}` : ""}</Badge>}
+                      <div>{(r.items as { material: string; reported: number; unit: string }[]).map((l) => `${l.reported} × ${l.material}`).join(", ") || "–"}</div>
                       {r.note && <div className="text-xs text-gray-500">{r.note}</div>}
+                    </td>
+                    <td>
+                      {r.signature ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={r.signature} alt={`Unterschrift ${r.reporterName}`} className="h-12 w-auto max-w-40 border border-gray-200 bg-white" />
+                      ) : (
+                        "–"
+                      )}
                     </td>
                   </tr>
                 ))}

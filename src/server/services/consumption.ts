@@ -86,10 +86,15 @@ const reportSchema = z.object({
   occurredOn: reqDate(),
   reporterName: reqText(80),
   note: optText(500),
-  items: z
-    .array(z.object({ stockId: z.string().min(1), quantity: z.coerce.number().int().min(1).max(200) }))
-    .min(1, "Bitte mindestens ein Material angeben")
-    .max(100),
+  items: z.array(z.object({ stockId: z.string().min(1), quantity: z.coerce.number().int().min(1).max(200) })).max(100),
+  // „Es wurden Betäubungsmittel verbraucht“ → keine Buchung, sondern Meldung: außerordentliche Kontrolle
+  btmUsed: z.preprocess((v) => v === true || v === "on" || v === "true", z.boolean()).default(false),
+  missionNumber: optText(40),
+  // Unterschrift (PNG als Data-URL, max. ~300 kB)
+  signature: z
+    .string({ required_error: "Bitte unterschreiben" })
+    .regex(/^data:image\/png;base64,[A-Za-z0-9+/=]+$/, "Bitte unterschreiben")
+    .max(400_000, "Unterschrift zu groß"),
   website: z.string().max(0).optional(), // Honigtopf-Feld gegen Bots
 });
 
@@ -109,6 +114,7 @@ export async function submitPublicConsumption(token: string, input: unknown, ip?
   const v = await db.vehicle.findFirst({ where: { consumptionToken: token, archivedAt: null } });
   if (!v) throw notFound("Dieser QR-Code ist ungültig oder wurde erneuert.");
   const d = parse(reportSchema, input);
+  if (!d.items.length && !d.btmUsed) throw invalid("Bitte mindestens ein Material angeben oder „BtM verbraucht“ ankreuzen.", { items: "Kein Material angegeben" });
   const today = berlinToday();
   if (d.occurredOn > today || d.occurredOn < addDays(today, -14)) throw invalid("Datum bitte innerhalb der letzten 14 Tage wählen.", { occurredOn: "Ungültiges Datum" });
   const ipHash = ip ? createHash("sha256").update(`${ip}|${token}`).digest("hex").slice(0, 32) : null;
@@ -148,11 +154,28 @@ export async function submitPublicConsumption(token: string, input: unknown, ip?
         lines.push({ material: stock.material.name, compartment: stock.compartment, unit: stock.material.unit, reported, booked });
       }
       const report = await tx.consumptionReport.create({
-        data: { vehicleId: v.id, occasion: d.occasion, occurredOn: d.occurredOn, reporterName: d.reporterName, note: d.note, items: lines, ipHash },
+        data: { vehicleId: v.id, occasion: d.occasion, occurredOn: d.occurredOn, reporterName: d.reporterName, note: d.note, items: lines, ipHash, btmUsed: d.btmUsed, missionNumber: d.missionNumber, signature: d.signature },
       });
-      await audit(actor, { action: "consumption.report", entityType: "ConsumptionReport", entityId: report.id, vehicleId: v.id, newValues: { occasion: d.occasion, reporter: d.reporterName, positions: lines.length } }, tx);
+      await audit(actor, { action: "consumption.report", entityType: "ConsumptionReport", entityId: report.id, vehicleId: v.id, newValues: { occasion: d.occasion, reporter: d.reporterName, positions: lines.length, btmUsed: d.btmUsed, missionNumber: d.missionNumber, signed: true } }, tx);
       const r = await recipientsFor({ permission: "materials.manage", vehicleId: v.id }, tx);
-      await notify(r, { type: "material_issue", title: `Verbrauch gemeldet: ${v.name}`, body: `${d.occasion} am ${fmtDate(d.occurredOn)} · ${lines.length} Position(en) · ${d.reporterName}`, link: "/nachfuellung", dedupeKey: `consumption:${report.id}` }, tx);
+      if (lines.length)
+        await notify(r, { type: "material_issue", title: `Verbrauch gemeldet: ${v.name}`, body: `${d.occasion} am ${fmtDate(d.occurredOn)} · ${lines.length} Position(en) · ${d.reporterName}`, link: "/nachfuellung", dedupeKey: `consumption:${report.id}` }, tx);
+      if (d.btmUsed) {
+        // Zuständig: alle mit BtM-Recht für dieses Fahrzeug (sonst Fahrzeug-/Mängelverantwortliche)
+        let btm = await recipientsFor({ permission: "materials.btm", vehicleId: v.id }, tx);
+        if (!btm.length) btm = await recipientsFor({ permission: "defects.manage", vehicleId: v.id }, tx);
+        await notify(
+          btm,
+          {
+            type: "check_extra",
+            title: `Außerordentliche Kontrolle erforderlich: ${v.name}`,
+            body: `BtM-Verbrauch gemeldet (${d.occasion} am ${fmtDate(d.occurredOn)}${d.missionNumber ? `, Einsatz-Nr. ${d.missionNumber}` : ""}, ${d.reporterName}). Bitte Fahrzeug inkl. BtM-Fach kontrollieren und BtM nachbuchen.`,
+            link: `/fahrzeuge/${v.id}/kontrolle`,
+            dedupeKey: `consumption-btm:${report.id}`,
+          },
+          tx,
+        );
+      }
       return { report, lines, vehicleName: v.name };
     },
     { timeout: 30_000 },

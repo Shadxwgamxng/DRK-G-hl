@@ -71,7 +71,7 @@ DATABASE_URL=…/drk_kfz_demo DEMO_MODE=true npm run db:demo
 
 ## Testfunktion: Verbrauch per QR-Code melden (standardmäßig aus)
 
-Unter *Verwaltung → Einstellungen* freischaltbar. Danach gibt es je Fahrzeug unter **„QR Verbrauch“** eine druckfertige QR-Karte (z. B. für die Fahrzeugmappe). Wer sie scannt, kann **ohne Anmeldung** verbrauchtes Material melden (Anlass, Datum, Name, Mengen). Die Mengen werden als „verbraucht“ ausgetragen (früheste Verfallsdaten zuerst) und landen auf der Nachfüllliste; der KFZ-Wart wird benachrichtigt. Schutz: geheimer, erneuerbarer Link je Fahrzeug, keine Bestände sichtbar, keine BtM/Geräte, Mengen- und Ratenbegrenzung, Bot-Schutz, Protokollierung (technischer Benutzer „QR-Meldung (ohne Login)“, nicht anmeldbar).
+Unter *Verwaltung → Einstellungen* freischaltbar. Danach gibt es je Fahrzeug unter **„QR Verbrauch“** eine druckfertige QR-Karte (z. B. für die Fahrzeugmappe). Wer sie scannt, kann **ohne Anmeldung** verbrauchtes Material melden (Anlass, Datum, Name, Mengen). Die Mengen werden als „verbraucht“ ausgetragen (früheste Verfallsdaten zuerst) und landen auf der Nachfüllliste; der KFZ-Wart wird benachrichtigt. Vor dem Absenden wird eine **Unterschrift** verlangt (Vollbild im Querformat). Ist „BtM verbraucht“ angekreuzt, wird nichts an BtM gebucht, sondern die BtM-Zuständigen erhalten sofort die Meldung „Außerordentliche Kontrolle erforderlich“. Schutz: geheimer, erneuerbarer Link je Fahrzeug, keine Bestände sichtbar, keine BtM/Geräte, Mengen- und Ratenbegrenzung, Bot-Schutz, Protokollierung (technischer Benutzer „QR-Meldung (ohne Login)“, nicht anmeldbar).
 
 ## Getroffene Standardentscheidungen
 

@@ -843,16 +843,19 @@ model Setting {
 
 // Testfunktion: Verbrauchsmeldung nach Einsatz/Sanitätsdienst per QR-Code (ohne Login)
 model ConsumptionReport {
-  id           String   @id @default(cuid())
-  vehicleId    String
-  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
-  occasion     String // Einsatz, Sanitätsdienst, Veranstaltung, Übung, Sonstiges
-  occurredOn   DateTime @db.Date
-  reporterName String
-  note         String?
-  items        Json // [{ material, compartment, unit, reported, booked }]
-  ipHash       String?
-  createdAt    DateTime @default(now())
+  id            String   @id @default(cuid())
+  vehicleId     String
+  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  occasion      String // Einsatz, Sanitätsdienst, Veranstaltung, Übung, Sonstiges
+  occurredOn    DateTime @db.Date
+  reporterName  String
+  note          String?
+  items         Json // [{ material, compartment, unit, reported, booked }]
+  btmUsed       Boolean  @default(false) // „BtM verbraucht“ angekreuzt → außerordentliche Kontrolle
+  missionNumber String?
+  signature     String? // Unterschrift als PNG (Data-URL)
+  ipHash        String?
+  createdAt     DateTime @default(now())
 
   @@index([vehicleId, createdAt])
 }
