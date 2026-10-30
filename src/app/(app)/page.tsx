@@ -50,7 +50,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       ) : (
         <>
           <h2 className="sr-only">Kennzahlen</h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-5">
+          <div className="anim-stagger grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-5">
             <StatTile label="Fahrzeuge" value={k.vehiclesTotal} icon={<Truck className="h-6 w-6" />} href="/fahrzeuge" />
             <StatTile label="Einsatzbereit" value={k.ready} tone="green" icon={<CheckCircle2 className="h-6 w-6" />} href="/fahrzeuge?status=READY" />
             <StatTile label="Eingeschränkt" value={k.limited} tone={k.limited ? "yellow" : "gray"} icon={<AlertTriangle className="h-6 w-6" />} href="/fahrzeuge?status=LIMITED" />

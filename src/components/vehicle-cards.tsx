@@ -9,10 +9,10 @@ const border: Record<string, string> = { READY: "border-l-green-600", LIMITED: "
 
 export function VehicleCards({ vehicles }: { vehicles: VehicleSummary[] }) {
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <ul className="anim-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {vehicles.map((v) => (
         <li key={v.id}>
-          <Link href={`/fahrzeuge/${v.id}`} className={`card focus-ring block border-l-4 p-4 transition-shadow hover:shadow-md ${border[v.status]}`}>
+          <Link href={`/fahrzeuge/${v.id}`} className={`card focus-ring lift block border-l-4 p-4 ${border[v.status]}`}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="truncate text-lg font-bold">{v.name}</p>

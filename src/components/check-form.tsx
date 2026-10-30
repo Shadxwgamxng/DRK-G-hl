@@ -80,6 +80,9 @@ export function CheckForm({
   const answered = checklist.items.filter((i) => results[i.id]?.result).length;
   const defects = checklist.items.filter((i) => results[i.id]?.result === "DEFECT").length;
   const set = (id: string, patch: Result) => setResults((r) => ({ ...r, [id]: { ...r[id], ...patch } }));
+  const totalSteps = checklist.items.length + materials.stocks.length;
+  const doneSteps = answered + materials.stocks.filter((s) => matState[s.id]?.status).length;
+  const progress = totalSteps ? Math.round((doneSteps / totalSteps) * 100) : 0;
 
   const payload = useMemo(
     () => ({
@@ -172,7 +175,10 @@ export function CheckForm({
         </div>
       </div>
 
-      <div className="sticky top-[57px] z-10 -mx-4 flex items-center justify-between gap-2 border-y border-gray-200 bg-white/95 px-4 py-2 text-sm backdrop-blur sm:mx-0 sm:rounded-lg sm:border">
+      <div className="sticky top-[57px] z-10 -mx-4 flex items-center justify-between gap-2 overflow-hidden border-y border-gray-200 bg-white/95 px-4 py-2 text-sm backdrop-blur sm:mx-0 sm:rounded-lg sm:border">
+        <div className="progress-track absolute inset-x-0 bottom-0" aria-hidden>
+          <div className={clsx("progress-fill", progress === 100 && "done")} style={{ width: `${progress}%` }} />
+        </div>
         <span className="font-semibold">
           {answered} / {checklist.items.length} bewertet
           {materials.stocks.length > 0 && <span className="ml-2 font-normal text-gray-600">· Material {materials.stocks.filter((s) => matState[s.id]?.status).length} / {materials.stocks.length}</span>}
@@ -210,7 +216,7 @@ export function CheckForm({
                     role="radio"
                     aria-checked={r.result === value}
                     onClick={() => set(item.id, { result: value })}
-                    className={clsx("flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-lg border-2 px-1 text-xs font-bold sm:flex-row sm:gap-2 sm:text-sm", r.result === value ? activeCls : "border-gray-200 bg-white text-gray-700")}
+                    className={clsx("flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-lg border-2 px-1 text-xs font-bold sm:flex-row sm:gap-2 sm:text-sm", r.result === value ? clsx(activeCls, "anim-select") : "border-gray-200 bg-white text-gray-700")}
                   >
                     <Icon className="h-5 w-5" aria-hidden /> {label}
                   </button>

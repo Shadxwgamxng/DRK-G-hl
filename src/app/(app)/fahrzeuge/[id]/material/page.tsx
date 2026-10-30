@@ -146,7 +146,7 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
     const canNest = loc.depth + 1 < MAX_DEPTH;
     return (
       // key: Formulare beim Wechsel zu einem anderen Schrank/Fach neu aufbauen (sonst bleiben alte Eingabewerte stehen)
-      <div key={loc.id} className="space-y-5">
+      <div key={loc.id} className="anim-page space-y-5">
         <Breadcrumb items={[{ label: "Beladung", href: base }, ...loc.ancestors.map((a) => ({ label: a.name, href: `${base}?ort=${a.id}` })), { label: loc.name }]} />
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-drkblue-900"><KindIcon kind={loc.kind} className="h-8 w-8" /></span>
@@ -163,7 +163,7 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
             {loc.children.length === 0 ? (
               <p className="text-sm text-gray-600">Noch keine Fächer – unten anlegen, oder Material direkt hier ablegen.</p>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="anim-stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {loc.children.map((f) => {
                   const st = statsDeep(f);
                   const sub = countFaecher(f);
@@ -229,7 +229,7 @@ export default async function VehicleMaterialPage({ params, searchParams }: { pa
           {manage ? "Legen Sie unten den ersten Schrank, Rucksack oder Behälter an – oder übernehmen Sie die Beladung eines anderen Fahrzeugs." : "Für dieses Fahrzeug ist noch kein Material hinterlegt."}
         </EmptyState>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="anim-stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {tree.map((c) => {
             const st = statsDeep(c);
             return <LocationCard key={c.id} href={`${base}?ort=${c.id}`} name={c.name} kind={c.kind} detail={`${countFaecher(c)} Fächer · ${st.positions} Position(en)`} stats={st} description={c.description} />;

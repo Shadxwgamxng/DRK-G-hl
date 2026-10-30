@@ -336,7 +336,7 @@ function ChoiceButton({ active, onClick, cls, icon, children }: { active: boolea
       role="radio"
       aria-checked={active}
       onClick={onClick}
-      className={clsx("flex min-h-12 items-center justify-center gap-2 rounded-sm border-2 px-2 text-sm font-bold", active ? cls : "border-gray-200 bg-white text-gray-700")}
+      className={clsx("flex min-h-12 items-center justify-center gap-2 rounded-sm border-2 px-2 text-sm font-bold", active ? clsx(cls, "anim-select") : "border-gray-200 bg-white text-gray-700")}
     >
       {icon} {children}
     </button>

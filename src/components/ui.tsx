@@ -93,8 +93,8 @@ export function Alert({ tone = "info", title, children, className }: { tone?: "i
     error: { c: "border-drk-200 bg-drk-50 text-drk-800", I: XCircle },
   }[tone];
   return (
-    <div role={tone === "error" || tone === "warning" ? "alert" : "status"} className={clsx("flex gap-3 rounded-lg border p-3 text-sm", map.c, className)}>
-      <map.I className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+    <div role={tone === "error" || tone === "warning" ? "alert" : "status"} className={clsx("anim-pop flex gap-3 rounded-lg border p-3 text-sm", map.c, className)}>
+      <map.I className={clsx("mt-0.5 h-5 w-5 shrink-0", tone === "success" && "anim-check")} aria-hidden />
       <div className="min-w-0">
         {title && <p className="font-semibold">{title}</p>}
         {children && <div className={clsx(title && "mt-0.5")}>{children}</div>}
@@ -117,7 +117,7 @@ export function EmptyState({ icon, title, children, action }: { icon?: ReactNode
 export function StatTile({ label, value, tone = "gray", href, icon, hint }: { label: string; value: number | string; tone?: Tone; href?: string; icon?: ReactNode; hint?: string }) {
   const accent = { green: "text-green-700", yellow: "text-amber-700", orange: "text-orange-700", red: "text-drk-500", gray: "text-drkblue-900", blue: "text-drkblue-600", dark: "text-drkblue-900" }[tone];
   const body = (
-    <div className="card flex h-full items-start justify-between gap-2 p-4 transition-colors hover:border-drkblue-900">
+    <div className={clsx("card flex h-full items-start justify-between gap-2 p-4", href && "lift hover:border-drkblue-900")}>
       <div>
         <p className="text-xs font-bold uppercase tracking-wide text-gray-600">{label}</p>
         <p className={clsx("mt-1 text-3xl font-bold tabular-nums", accent)}>{value}</p>

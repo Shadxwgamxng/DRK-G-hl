@@ -64,7 +64,7 @@ export function LocationHint({ texts, compact = false }: { texts: (string | null
 
 export function LocationCard({ href, name, kind, detail, stats, description }: { href: string; name: string; kind: string; detail: string; stats: LocationStats; description?: string | null }) {
   return (
-    <Link href={href} className="card group flex min-h-24 items-start gap-3 p-4 hover:border-drkblue-300 hover:bg-drkblue-50/40">
+    <Link href={href} className="card lift group flex min-h-24 items-start gap-3 p-4 hover:border-drkblue-300 hover:bg-drkblue-50/40">
       <span className="mt-0.5 text-drkblue-900"><KindIcon kind={kind} /></span>
       <span className="min-w-0 flex-1">
         <span className="block font-bold text-gray-800 group-hover:text-drkblue-700">{name}</span>

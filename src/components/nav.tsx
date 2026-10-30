@@ -148,8 +148,8 @@ export function BottomNav({ items, primary, footer }: { items: NavItem[]; primar
       </nav>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menü">
-          <div className="absolute inset-0 bg-drkblue-900/50" onClick={() => setOpen(false)} />
-          <div className="bottom-safe absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto bg-white pb-2">
+          <div className="anim-backdrop absolute inset-0 bg-drkblue-900/50" onClick={() => setOpen(false)} />
+          <div className="anim-sheet bottom-safe absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto bg-white pb-2">
             <div className="flex items-start justify-between">
               <Brand />
               <button onClick={() => setOpen(false)} className="m-2 p-3 text-drkblue-900" aria-label="Menü schließen">

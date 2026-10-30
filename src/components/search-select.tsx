@@ -133,7 +133,7 @@ export function SearchSelect({
           </button>
         )}
         {open && (
-          <ul ref={listRef} id={listId} role="listbox" className="absolute z-20 mt-1 max-h-80 w-full overflow-auto rounded-sm border border-gray-300 bg-white shadow-lg">
+          <ul ref={listRef} id={listId} role="listbox" className="anim-drop absolute z-20 mt-1 max-h-80 w-full overflow-auto rounded-sm border border-gray-300 bg-white shadow-lg">
             {results.shown.length === 0 ? (
               <li className="px-3 py-3 text-sm text-gray-500">Keine Treffer für „{query}“</li>
             ) : (

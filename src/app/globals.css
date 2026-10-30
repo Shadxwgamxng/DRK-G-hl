@@ -80,3 +80,95 @@ body {
 .bottom-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* ───── Dezente Animationen (DRK-Styleguide: flach, ruhig, funktional; kein Blinken) ─────
+   Kurze Übergänge (150–250 ms) für Rückmeldung und Orientierung. Bei „Bewegung reduzieren“
+   im Betriebssystem werden alle Animationen abgeschaltet (siehe unten). */
+@keyframes drk-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes drk-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes drk-pop {
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes drk-drop {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes drk-sheet {
+  from { transform: translateY(16px); opacity: 0.6; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes drk-select {
+  from { box-shadow: 0 0 0 0 rgba(0, 45, 85, 0.28); }
+  to { box-shadow: 0 0 0 8px rgba(0, 45, 85, 0); }
+}
+@keyframes drk-check-draw {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+/* Seiteninhalt beim Wechsel sanft einblenden */
+.anim-page { animation: drk-fade-up 0.22s ease-out both; }
+/* Kacheln/Listen nacheinander einblenden (max. 12 gestaffelt) */
+.anim-stagger > * { animation: drk-fade-up 0.24s ease-out both; }
+.anim-stagger > :nth-child(2) { animation-delay: 30ms; }
+.anim-stagger > :nth-child(3) { animation-delay: 60ms; }
+.anim-stagger > :nth-child(4) { animation-delay: 90ms; }
+.anim-stagger > :nth-child(5) { animation-delay: 120ms; }
+.anim-stagger > :nth-child(6) { animation-delay: 150ms; }
+.anim-stagger > :nth-child(7) { animation-delay: 170ms; }
+.anim-stagger > :nth-child(8) { animation-delay: 190ms; }
+.anim-stagger > :nth-child(9) { animation-delay: 210ms; }
+.anim-stagger > :nth-child(10) { animation-delay: 230ms; }
+.anim-stagger > :nth-child(11) { animation-delay: 245ms; }
+.anim-stagger > :nth-child(n + 12) { animation-delay: 260ms; }
+/* Hinweise und Meldungen */
+.anim-pop { animation: drk-pop 0.18s ease-out both; }
+/* Auswahllisten / Vorschläge */
+.anim-drop { animation: drk-drop 0.14s ease-out both; }
+/* Mobiles „Mehr“-Menü */
+.anim-sheet { animation: drk-sheet 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.anim-backdrop { animation: drk-fade-in 0.2s ease-out both; }
+/* Gewählte Option im Check: einmaliger, weicher Ring */
+.anim-select { animation: drk-select 0.45s ease-out; }
+/* Haken in Erfolgsmeldungen wird „gezeichnet“ */
+.anim-check path { stroke-dasharray: 24; animation: drk-check-draw 0.4s ease-out 0.1s both; }
+
+/* Anklickbare Kacheln heben sich leicht an */
+.lift {
+  transition: transform 0.18s ease-out, box-shadow 0.18s ease-out, border-color 0.18s ease-out, background-color 0.18s ease-out;
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 45, 85, 0.1);
+}
+.lift:active { transform: translateY(0); box-shadow: none; }
+
+/* Buttons: Farbwechsel weich, beim Drücken minimal eindrücken */
+button, a, .input, .table-base tbody tr {
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 0.15s;
+  transition-timing-function: ease-out;
+}
+button:not(:disabled):active { transform: scale(0.98); }
+
+/* Fortschrittsbalken (z. B. im Check) */
+.progress-track { height: 4px; background: #efeeea; overflow: hidden; }
+.progress-fill { height: 100%; background: #e60005; transition: width 0.3s ease-out; }
+.progress-fill.done { background: #15803d; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .lift:hover { transform: none; }
+}
